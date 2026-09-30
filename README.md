@@ -106,20 +106,11 @@ A **Drum** specialization is a candidate for the first creative proof after the 
 
 Maidionis begins from the current Arbitrium research, but this repository is **not** a mechanical rename or a clean-slate rewrite.
 
-The migration must preserve both successful and failed evidence, including:
+Maidionis owns the reusable mechanisms needed to make specialization research reproducible: dataset/manifest contracts, training/evaluation infrastructure, checkpointing, calibration, artifact contracts, and provenance hooks.
 
-- Experiment 001 and Experiment 002
-- the original 1,000-record curriculum
-- the 24 / 96 / 72 lesson curricula
-- dataset hashes
-- seed 42 / 43 / 44 results
-- label support/recall and confusion evidence
-- failed held-out generalization
-- answerability failures
-- checkpoint and reproducibility information
-- research-only / non-release status
+**Specialization-specific curricula, experiment reports, measured results, failure analysis, and research history belong with the specialization repository.** For the first Decision specialization, those materials belong in Arbitrium rather than Maidionis.
 
-Historical research should remain traceable even when reusable implementation moves into Maidionis.
+Historical Arbitrium research must remain traceable during migration, but Maidionis does not need to duplicate its experiment results.
 
 ## Implementation boundary
 
