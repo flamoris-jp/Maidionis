@@ -12,7 +12,7 @@ It is not intended to be one universal model. A Maidionis specialization learns 
 
 ### What it is / 何者か
 
-Maidionis is a specialization-neutral foundation for training, evaluating, packaging, and running small task-specific AI models.
+Maidionis is a specialization-neutral foundation for training, evaluating, and packaging small task-specific AI models with bounded inference contracts.
 
 The base has no fixed domain role. Education and specialization define what a resulting model can do.
 
