@@ -2,7 +2,19 @@
 
 This repository is part of the FLAMORIS ecosystem.
 
-AI agents and human contributors should inspect the current repository before making substantial changes. Do not assume that setup, build, deployment, service names, paths, configuration, or architecture match another FLAMORIS repository.
+Maidionis is a specialization-neutral trainable AI foundation. AI agents and human contributors must preserve the distinction between **Maidionis Core**, **specialization-specific intelligence**, and **Runtime execution authority**.
+
+Before substantial changes, read README.md and Issue #1, inspect the current implementation, and inspect the relevant source research when migration work is involved.
+
+## Maidionis-specific boundaries
+
+- Keep Maidionis Core free of Decision-, music-, image-, motion-, or other domain-specific semantics unless the contract is intentionally specialization-extensible.
+- The first specialization is Decision / Arbitrium. Do not mechanically rename Arbitrium code into Core.
+- Preserve research provenance, including failed experiments and limitations, not only successful metrics.
+- Do not describe memorization diagnostics as held-out generalization.
+- Maidionis may return bounded model outputs; it does not gain authority to execute tools, actions, retries, workflows, host changes, or product mutations.
+- FLAMORIS AI Runtime owns execution/orchestration concerns such as Workflow execution, Jobs, scheduling, shared execution state, retry/fallback, and output routing.
+- Repository-specific build/test commands must come from the current implementation. Do not copy commands from Arbitrium or another FLAMORIS repository until the corresponding code has actually migrated.
 
 ## Core principles
 
@@ -12,7 +24,7 @@ AI agents and human contributors should inspect the current repository before ma
 
 2. **Keep responsibility clear**
    - Keep this repository focused on its documented purpose.
-   - Preserve application and service ownership boundaries.
+   - Preserve application, Runtime, model, and service ownership boundaries.
    - Do not create a second source of truth for state owned elsewhere.
 
 3. **Reuse deliberately**
@@ -31,30 +43,36 @@ AI agents and human contributors should inspect the current repository before ma
    - Document externally visible behavior and compatibility impact.
 
 6. **Documentation must track reality**
-   - Mark the current implementation/status explicitly when a repository has both shipped behavior and future phases.
+   - Mark current implementation/status explicitly.
    - Do not describe implemented behavior as merely planned, and do not describe planned behavior as already shipped.
    - Keep public architecture portable. Machine names, private topology, credentials, and deployment-only paths belong in private deployment documentation rather than public repository defaults.
 
-7. **AI-native, human-authoritative**
+7. **Research evidence must stay honest**
+   - Keep dataset identity, seeds, hashes, metrics, evaluation splits, and known failures traceable when moving research into public implementation.
+   - A working training pipeline is not evidence of a useful production model.
+   - Do not silently change the meaning of historical results during migration.
+
+8. **AI-native, human-authoritative**
    - AI-assisted development is welcome.
-   - Humans remain responsible for reviewing behavior, security, licensing, and compatibility.
+   - Humans remain responsible for reviewing behavior, security, licensing, scientific claims, and compatibility.
 
 ## Before implementing a substantial change
 
 - read this file and README.md;
-- identify **what this repository is, what it owns, what it does not own, its current status, and where it fits in FLAMORIS**;
-- read the [organization map](https://github.com/flamoris-jp/.github) and the relevant family map when cross-repository context matters;
-- read relevant docs, Issues, and Pull Requests;
+- read Issue #1 and any issue governing the current phase;
+- identify what belongs to Core, a specialization, Runtime, or external research provenance;
+- read the [organization map](https://github.com/flamoris-jp/.github) and [FLAMORIS AI ecosystem](https://github.com/flamoris-jp/flamoris-ai/blob/main/docs/ai-ecosystem.md) when cross-repository context matters;
 - inspect current implementation and tests;
+- inspect source research before migration;
 - identify the source of truth and dependency direction;
 - check whether reusable FLAMORIS infrastructure already exists;
-- verify repository-specific setup and deployment details instead of guessing.
+- verify repository-specific setup details instead of guessing.
 
 ## Testing
 
 Add or update tests where practical.
 
-Prefer deterministic tests and explicit contracts. When behavior differs by platform, runtime, provider, or environment, document the supported boundary and test the relevant cases.
+Prefer deterministic tests and explicit contracts. For education and evaluation work, preserve split boundaries and reproducibility evidence. When behavior differs by platform, runtime, model architecture, or environment, document and test the supported boundary.
 
 ## Licensing
 
@@ -66,4 +84,4 @@ Do not add third-party code, models, model weights, datasets, fonts, media, or g
 
 FLAMORIS does not provide guaranteed individual support.
 
-Use the repository documentation, Issues, tests, logs, and source code as primary references when diagnosing problems.
+Use the repository documentation, Issues, tests, logs, source code, and preserved research evidence as primary references when diagnosing problems.
