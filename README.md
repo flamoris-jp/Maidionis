@@ -1,84 +1,154 @@
-# FLAMORIS Repository Template
+# Maidionis
 
-Standard repository template for FLAMORIS projects.
+**A small trainable AI foundation that becomes specialized intelligence through education.**
 
-Use this repository as the starting point for new FLAMORIS repositories. After creating a repository from this template, replace the placeholders in this README with project-specific information and add only the language, runtime, build, and deployment files the project actually needs.
+> Maidionis begins with no role. Training gives it one. Runtime gives it a place in the whole.
 
-## Project
+Maidionis is a FLAMORIS project for building **small specialized intelligences** from a common trainable foundation.
 
-**Name:** `<PROJECT_NAME>`
-
-**Description:** `<PROJECT_DESCRIPTION>`
-
-**Status:** `<planned | development | stable | meta>`
-
-For repositories in `flamoris-jp`, keep this wording aligned with the organization `development_status` custom property. State implemented behavior separately from planned work. Do not leave a repository looking like a future design after its runtime or product slice has already shipped.
+It is not intended to be one universal model. A Maidionis specialization learns one bounded role, exposes a stable inference contract, and can be composed with other specializations by the FLAMORIS AI Runtime.
 
 ## 🧭 Repository identity / このRepositoryは何者？
 
-Replace the placeholders below with short, project-specific statements. Keep them near the top so a human or AI assistant can understand the repository before digging through Issues or source code.
-
 ### What it is / 何者か
 
-`<ONE_OR_TWO_SENTENCE_PROJECT_IDENTITY>`
+Maidionis is a specialization-neutral foundation for training, evaluating, packaging, and running small task-specific AI models.
+
+The base has no fixed domain role. Education and specialization define what a resulting model can do.
 
 ### What it owns / 主な責任範囲
 
-- `<PRIMARY_RESPONSIBILITY_OR_AUTHORITY>`
-- `<SECONDARY_RESPONSIBILITY_IF_NEEDED>`
+The intended Core boundary includes reusable, specialization-neutral contracts and implementation for:
+
+- model architecture
+- training and inference
+- bounded state/context input
+- dataset and manifest contracts
+- education orchestration
+- checkpointing and reproducibility
+- artifact serialization
+- evaluation and calibration
+- specialization identity and versioning
+- a stable Runtime-facing model interface
 
 ### What it does not own / 持たない責任
 
-- `<IMPORTANT_NEIGHBORING_RESPONSIBILITY_OWNED_ELSEWHERE>`
+Maidionis does **not** own:
 
-Delete this subsection only when there is genuinely no likely ownership confusion.
+- Workflow execution
+- tool or action execution
+- authorization
+- host or service lifecycle
+- retry/fallback orchestration
+- global shared-state ownership
+- product/application state
+- GPU/runtime lifecycle policy
+
+Those responsibilities belong to the surrounding Runtime, applications, and other FLAMORIS services.
 
 ### Current status / 現在の状態
 
-`<WHAT_IS_IMPLEMENTED_NOW_AND_WHAT_IS_STILL_PLANNED_OR_UNACCEPTED>`
+**Bootstrap / architecture design.**
 
-Do not describe planned behavior as shipped, or implemented behavior as merely future design.
+The repository is being established from controlled Arbitrium research. The reusable Core boundary, specialization interface, migration map, and Runtime adapter contract are being defined in [Issue #1](https://github.com/flamoris-jp/Maidionis/issues/1).
+
+No production-ready Maidionis model, stable artifact format, or Runtime integration is claimed yet.
+
+The existing research has demonstrated that a small native training path can learn tightly bounded lessons. It has **not** demonstrated sufficient held-out generalization, reliable abstention, or production quality. Those limitations remain part of the migration evidence rather than being hidden by the rename.
 
 ### Where it fits / FLAMORISのどこに属する？
 
-Start from the [FLAMORIS organization map](https://github.com/flamoris-jp/.github).
+Maidionis provides specialized model intelligence.
 
-When relevant, also link the appropriate family map:
+```text
+Maidionis specialization
+        ↓ bounded inference
+FLAMORIS AI Runtime
+        ↓ workflow / jobs / shared execution state
+Application / Studio / creative pipeline
+```
 
-- 🎨 Windows / Desktop: [FLAMORIS Desktop Ecosystem](https://github.com/flamoris-jp/flamoris-commons/blob/main/docs/desktop-ecosystem.md)
-- 🤖 AI / MCP services: [FLAMORIS AI Ecosystem](https://github.com/flamoris-jp/flamoris-ai/blob/main/docs/ai-ecosystem.md)
+The intended separation is:
 
-The shared repository documentation policy lives in [FLAMORIS Commons](https://github.com/flamoris-jp/flamoris-commons/blob/main/docs/repository-policy.md).
+```text
+Maidionis = specialized intelligence
+Runtime   = execution / orchestration
+Workflow  = composition strategy
+State     = shared execution context
+```
 
-## 🏷️ GitHub metadata checklist / GitHub表示設定
+See the [FLAMORIS AI ecosystem](https://github.com/flamoris-jp/flamoris-ai/blob/main/docs/ai-ecosystem.md) and [FLAMORIS AI Runtime](https://github.com/flamoris-jp/flamoris-ai-runtime).
 
-After creating a repository from this template, configure the GitHub repository metadata as well as the files.
+## Specializations
 
-- **Description:** one concise sentence describing the repository's current role.
-- **Topics:** include `flamoris`, then add a small set of useful project/domain/technology topics. Prefer roughly 4–7 intentional topics over filling every slot.
-- **Development status:** set the organization `development_status` custom property and keep it aligned with this README.
-- **Visibility:** choose intentionally; do not expose deployment secrets, private topology, credentials, or private assets by making a repository public.
+The first specialization is **Decision / Arbitrium**.
 
-Do not use obsolete or speculative Topics to advertise responsibilities the repository does not actually own.
+Its existing research task interprets bounded English evidence and returns a bounded advisory judgment such as `retry`, `fallback`, or `stop`, with answerability/abstention handled separately.
 
-> GitHub repository metadata is not repository file content. When creating from a template, verify these settings explicitly rather than assuming every template setting was inherited. 🐾
+Decision-specific semantics remain outside Maidionis Core.
+
+Conceptually:
+
+```text
+Maidionis Core
+    │
+    ├─ education → Decision specialization
+    ├─ education → Drum specialization
+    ├─ education → Bass specialization
+    ├─ education → Melody specialization
+    ├─ education → Critic specialization
+    └─ education → other bounded specializations
+```
+
+A **Drum** specialization is a candidate for the first creative proof after the Core/Decision split is established.
+
+## Research origin and provenance
+
+Maidionis begins from the current Arbitrium research, but this repository is **not** a mechanical rename or a clean-slate rewrite.
+
+The migration must preserve both successful and failed evidence, including:
+
+- Experiment 001 and Experiment 002
+- the original 1,000-record curriculum
+- the 24 / 96 / 72 lesson curricula
+- dataset hashes
+- seed 42 / 43 / 44 results
+- label support/recall and confusion evidence
+- failed held-out generalization
+- answerability failures
+- checkpoint and reproducibility information
+- research-only / non-release status
+
+Historical research should remain traceable even when reusable implementation moves into Maidionis.
+
+## Implementation boundary
+
+The Arbitrium research prototype currently uses:
+
+- **C++20 / CMake / LibTorch** for model architecture, native training, calibration, and inference
+- **Python** for curriculum/dataset generation, research orchestration, evaluation support, and analysis
+
+Maidionis starts from that evidence, but the final C++ / Python responsibility split is part of the design work. Do not treat the current split as a frozen public API.
+
+## Design principles
+
+- Keep Core specialization-neutral.
+- Keep Decision semantics in the Decision specialization.
+- Prefer bounded inputs and bounded outputs.
+- Keep execution authority outside the model.
+- Preserve reproducibility and research provenance.
+- Separate memorization diagnostics from held-out generalization.
+- Treat evaluation and calibration as first-class architecture.
+- Do not report research diagnostics as release quality.
+- Prefer explicit boundaries over speculative abstractions.
 
 ## Getting started
 
-Document the real setup, build, test, and run commands for this repository here.
+There is no supported build or run command yet because implementation migration has not started in this repository.
 
-Do not copy commands from another FLAMORIS project unless they have been verified against the current implementation.
+Start with [Issue #1: Design Maidionis Core and migrate Arbitrium as the first specialization](https://github.com/flamoris-jp/Maidionis/issues/1).
 
-## Repository principles
-
-- Keep the repository focused on one clear responsibility.
-- Treat current code, tests, documentation, and repository configuration as the source of truth.
-- Keep public documentation portable: describe product/runtime contracts without publishing private hostnames, credentials, deployment topology, or machine-specific paths.
-- Prefer explicit boundaries over speculative abstractions.
-- Keep secrets, credentials, tokens, and private data out of source control and logs.
-- Add tests where practical and document externally visible behavior.
-- Inspect existing FLAMORIS shared packages before introducing duplicate infrastructure.
-- AI-assisted development is welcome; submitted changes still require human review and responsibility.
+Repository-specific build, test, and experiment commands will be documented only after they exist and are verified against the current implementation.
 
 ## FLAMORIS
 
@@ -118,4 +188,4 @@ FLAMORISのソフトウェアは現状のまま提供されます。個別サポ
 
 Code in this repository is licensed under the [Apache License 2.0](LICENSE), unless otherwise noted.
 
-AI models, model weights, datasets, media, and other non-code assets may use separate licenses. State their applicable licenses alongside those assets.
+AI models, model weights, datasets, media, and other non-code assets may use separate licenses. Their applicable licenses must be stated alongside those assets.
