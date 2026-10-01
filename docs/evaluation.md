@@ -74,7 +74,8 @@ candidate; it cannot choose architecture, epoch, seed, gate or next lessons.
 Access ledger stores admitted identity/reason/time/report digest. Public
 diagnostic test files do not establish sealed evaluation.
 
-The record references descriptor and evaluated-component digests; the descriptor
+The record references the immutable policy/config digest fixed by the education
+or evaluation plan, descriptor and evaluated-component digests; the descriptor
 does not reference it. It owns metrics/error definitions, minimum support,
 thresholds, baselines and readiness/release criteria supplied by the specialization.
 Reports carry the exact registration digest and complete accounting. A changed

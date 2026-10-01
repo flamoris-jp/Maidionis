@@ -109,8 +109,8 @@ fixture is acceptable only with explicit new identity and test review.
 
 Required observable path:
 
-1. Freeze with the real data/provenance components and native revalidation, then
-   resolve the test's immutable registry/descriptor. Unknown or missing Bernoulli
+1. Resolve the test's immutable registry/descriptor, then freeze with the real
+   data/provenance components and native revalidation. Unknown or missing Bernoulli
    operations fail; nothing supplies a Decision default.
 2. Train actual Core model/optimizer components in the exact serialized CPU FP32
    profile. Assert finite nonzero gradients and changed parameters after updates,

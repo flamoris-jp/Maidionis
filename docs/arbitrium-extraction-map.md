@@ -30,12 +30,19 @@ reproducibility without becoming the production Decision implementation.
 | `metrics.cpp` | optional categorical/Bernoulli/ordinal reducers and Wilson math | Decision eligible subsets, support conventions and accepted-error meaning stay D; undefined denominators explicit |
 | `calibration.cpp` | bounded scalar fit, finite softmax/sigmoid and parameterized finite grid search | answerability meaning, grid/support/coverage/risk constants and tie policy stay D; no universal readiness gate |
 | `postprocess.cpp` | reusable numeric transforms only, already covered above | DecisionResult, canonical ties, request probability order, ordinal score and abstention precedence stay D |
-| Python `dataset.py` | durable freeze, immutable manifest/inventory, family integrity hooks | state-text dedup and source split salt are legacy D; new neutral salt changes dataset identity; full audit/support checking is additional work |
+| Python `dataset.py` | durable freeze, immutable manifest/inventory, family integrity hooks | state-text dedup and mutable-family-ID split hash are legacy D; new neutral data uses canonical ancestry fingerprints and changes dataset identity; full audit/support checking is additional work |
 | Python `journal.py` | single-writer response journal, digest/replay and atomic output | POSIX implementation is the Linux profile; bound paths/storage and corruption recovery before broader support |
 | Python `gpt_oss.py` | configurable bounded HTTP/replay/budget skeleton and provider identity | recovery prompts/target validation/facts stay D; receiving bytes before checking size is not a transport cap |
 | Python `teacher.py` / `orchestrator.py` | finite provider/review/adjudication hooks and audit transitions | concept list, recovery facts and oracle binding stay D; agreement remains pending audit |
 | Experiment runners/generators | useful design patterns only, no historical results in Core | keep exact research code/config/results R; replace embedded three-class reports only in new registered runs |
-| Artifact loader/export | reviewed integrity/compatibility requirements | source complete serving engine is absent; implement new strict schemas rather than treating a spec as existing code |
+| Artifact loader/export | reviewed integrity/compatibility requirements | source complete serving engine is absent; implement metadata-only validation and host-admitted materialization/receipts, not a guessed existing loader |
+
+Compiled Decision operations are assembled in Arbitrium's
+[composition root](architecture.md#composition-root), not Core or Runtime's base
+library. The registry builder and neutral numerical mechanisms live in Core;
+Decision factories/drivers and the separate provider bridge remain Arbitrium.
+Model descriptor, evaluation registration and Runtime capability registration
+have separate identities. No legacy evidence is rewritten to fit these new rules.
 
 ## Known specification/implementation gaps
 

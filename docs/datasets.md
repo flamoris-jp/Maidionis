@@ -114,7 +114,8 @@ registered experiment pending regrouping and a new registration. Previously
 exposed holdout content cannot become clean training evidence under that rename.
 
 The initial new neutral hash profile uses SHA-256 of UTF-8
-`maidionis-split-v1\n` + decimal nonnegative preregistered seed + `\n` +
+`maidionis-split-v1\n` + decimal preregistered seed (integer 0..2^63-1, no
+leading zeros except zero itself) + `\n` +
 the 64-character `family_fingerprint`, with no final LF; take the first eight
 bytes big-endian modulo 10000. Buckets [0,6000), [6000,7500), [7500,8500),
 [8500,9000), [9000,10000) select train/dev/calibration_fit/calibration_select/test.

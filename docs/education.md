@@ -34,7 +34,7 @@ and a true elapsed deadline, rather than claiming a post-hoc check cancels work.
 An `EducationPlan` requires experiment ID, descriptor digest, curriculum/prompt
 config digests, approved provider identities, verifier/audit policy, split/data
 references, resolved training/selection configuration, separate calibration config
-and evaluation registration digests, and explicit maximum cycles,
+and preregistered evaluation-policy/config digests, and explicit maximum cycles,
 attempts, examples, elapsed time and output/storage bytes. Every maximum is
 positive and finite. No sentinel meaning unlimited is allowed in a registered
 run. Policy belongs to the specialization; Core checks bounds and accounting.
@@ -48,6 +48,13 @@ Single-writer journal, immutable content-addressed response records and durable
 stage outputs support restart. Reject corrupt/partially committed journal
 entries; recovery is explicit. Journal durability does not prove remote work
 was never attempted or give exactly-once provider behavior.
+
+The plan fixes evaluation policy before candidate selection. The final
+`EvaluationRegistration` adds the exact selected component/calibration/data
+bindings after export, before any confirmatory test access. It does not need to
+predict future weight bytes when the education plan is created. Journal both
+records and reject a policy substitution at final registration; retrospective
+policy assessments are explicitly separate work, not continuation of this plan.
 
 Only aggregate supported dev slices propose new lessons. New families stay
 disjoint from holdouts. Record dev adaptation; contaminated holdouts are retired.

@@ -24,7 +24,7 @@ No semantic compatibility is inferred from matching label count, filename or
 semver major alone. New weights/tokenizer/assembly/task/precision invalidate
 calibration and evaluation bindings. Compatibility entries name tested LibTorch,
 SentencePiece where relevant, compiler ABI, OS/architecture, dtype and registered
-codec/component versions. Reject unknown profiles; device fallback is explicit.
+codec/component versions. Reject unknown profiles; no implicit device fallback.
 
 ## Serving artifact inventory
 
