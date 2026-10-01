@@ -16,12 +16,53 @@ Desktop.ini
 !.env.example
 *.local
 
-# Logs
+# Logs and temporary files
 *.log
-
-# Temporary files
 tmp/
 temp/
 .cache/
 
-# Language- and runtime-specific ignores belong in each generated repository.
+# CMake / C++
+build/
+cmake-build-*/
+CMakeFiles/
+CMakeCache.txt
+cmake_install.cmake
+compile_commands.json
+CTestTestfile.cmake
+Testing/
+
+# Native outputs
+*.o
+*.obj
+*.a
+*.lib
+*.so
+*.dylib
+*.dll
+*.exe
+*.pdb
+
+# Python
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.venv/
+venv/
+dist/
+*.egg-info/
+
+# Research outputs and local model artifacts
+runs/
+checkpoints/
+artifacts/local/
+datasets/generated/
+*.pt
+*.pth
+*.ckpt
+*.safetensors
+
+# Explicitly versioned fixtures, manifests and research evidence may be committed
+# under repository-owned paths when their provenance and license are documented.
