@@ -101,6 +101,14 @@ parity, then fit calibration and evaluate exact component bytes. Define
 descriptor, model config, weights, codec/schema/semantic-spec and calibration
 members: same sorted-key UTF-8 JSON serialization plus LF as shared fixtures.
 Exclude report, card and enclosing manifest to avoid cyclic references.
+
+The digest input is an array sorted lexicographically by UTF-8 relative path;
+each element has exactly `path`, `sha256`, `bytes`. Keys are sorted, integers
+use decimal notation, non-ASCII text is emitted as UTF-8, separators have no
+whitespace and the complete array ends with one LF. Shared native/Python fixtures
+fix string escaping and reject invalid Unicode. No floating-point values occur
+in this inventory digest representation.
+
 Reports bind that digest; final bundle incorporates report hashes without
 changing evaluated components. Finalization revalidates both inventories.
 

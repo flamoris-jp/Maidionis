@@ -54,6 +54,14 @@ not hardcoded three-label defaults. The source's pooled averaging omits order
 and segment membership; do not turn its train-only success into a model-quality
 claim. Encoder tensor tests do not establish better language judgment.
 
+Preserve the first extracted numerical profile's actual dimensions and controls:
+hidden width 256, encoder 4 layers/4 heads/FFN 1024, maximum sequence length 256,
+categorical K in 2..16 and the validated text codec's PAD/control inventory.
+These are optional component/profile limits, not universal envelope requirements.
+Refactoring head composition or registered shapes gets new component/config
+identities and archive compatibility tests; it does not silently redefine a
+historical architecture ID while reusing its calibration or weight digest.
+
 The first supported execution profile is serialized, single-worker Linux CPU
 FP32 with finite dimensions and allocation limits. LibTorch initialization and
 training currently modify process-global RNG/thread/determinism settings.

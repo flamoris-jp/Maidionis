@@ -12,6 +12,7 @@ The [design index](README.md) pins the inspected public Runtime revision.
 | `include/flamoris/runtime/compiler.hpp` | `CapabilityContract`, bounded `ValueSchema`, fingerprints, effects and limits | register exact task-specific schema/profile in trusted composition |
 | `include/flamoris/runtime/registered_adapter.hpp` | `RegisteredProviderPort`, `AdapterAuthority`, `RegisteredCapabilityAdapter`, bounded sink | usable future bounded call seam; transport/job grants remain Runtime-owned |
 | `include/flamoris/runtime/adapter_binding.hpp` and `src/adapters/adapter_binding.cpp` | persistent provider binding and serialized invocation | model worker runs outside control actor; no second scheduler |
+| `include/flamoris/runtime/runtime.hpp` and `include/flamoris/runtime/runtime_residency.hpp` | provider registration is possible; immutable residency pool holds concrete `TinyModel` pointers | provider call seam exists, but generic LibTorch residency/load ownership needs an explicit Runtime extension |
 | `src/adapters/registered_adapter.cpp` | one-use grant, input pin/digest, output schema/byte validation and outcome bookkeeping | model verdict cannot construct grants or retry evidence |
 | `docs/phase-c/STATUS.md` | limited native fixture and CPU/OpenCL evidence | no Maidionis/LibTorch/GPU qualification inherited |
 
@@ -37,6 +38,19 @@ must account model storage, allocator/framework/context overhead and peak
 transient buffers; no hidden model cache outside Runtime accounting. Changing
 artifact, descriptor, adapter/profile or resource contract changes the capability
 fingerprint. A stale plan fails pin validation before dispatch.
+
+The current `RuntimeResidencyPool` cannot hold a Maidionis model. R1 must add a
+Runtime-owned immutable provider-model holder/accounting seam: reserve capacity
+before loading, let a bounded loader worker produce the validated holder and
+allocation receipt, transfer it to the Runtime owner, and attach it to provider
+calls only under the current lease/pins. Shared storage is counted once while
+per-call buffers/execution are charged separately. Admission closes before
+retirement, active references drain, and actual allocation release is acknowledged
+before clearing residency. Framework allocations that persist after holder
+destruction remain explicitly charged until reconciled or process teardown.
+An eagerly constructed provider holding unaccounted weights is not an allowed
+shortcut. This extension needs its own tests in Runtime; the registered call
+interface alone does not demonstrate production-compatible model lifecycle.
 
 Invocation input is the bounded Maidionis request, without artifact paths or
 credentials. Runtime's compiler `ValueSchema` is not arbitrary JSON Schema:

@@ -15,6 +15,7 @@ evidence in later PRs; source research test results are not Maidionis test resul
 | [Runtime integration](runtime-integration.md) | existing Runtime seams, proposed adapter and state authority |
 | [Extraction map](arbitrium-extraction-map.md) | source inventory, four-way classification and known gaps |
 | [Acceptance and migration](acceptance-and-migration.md) | Issue coverage, focused implementation PRs and checks |
+| [Design self-review](design-review.md) | corrected findings, verification and remaining implementation gates |
 
 Within this proposal, the tables specifying required fields, invariants and
 rejection behavior are the contract target. Examples are illustrative. No

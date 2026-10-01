@@ -88,6 +88,12 @@ limits; an opaque unchecked `metadata` object is not an escape hatch. Default
 envelope caps: request 64 KiB, result 64 KiB, error message 1 KiB. Profiles may
 reduce caps; increases require registration and resource tests.
 
+All JSON parsing additionally caps nesting at 32, values at 65,536 and key bytes
+at 256, before constructing an unbounded DOM. Versions are explicit nonempty
+bounded ASCII strings checked by the registry; schema-version strings never
+select unknown fallback parsers. Dates in persisted records use RFC 3339 UTC
+with `Z`. Schema/config references resolve only inside the pinned inventory.
+
 ## Decision adaptation
 
 Arbitrium preserves fixed TaskSpec policy/question/labels and its request-order

@@ -20,6 +20,13 @@ denominator definition, exclusions and slice identity. Empty accepted sets or
 zero-support classes produce explicit undefined/warning states. Research code
 that returns a convenient zero is adapted at this boundary.
 
+Metric eligibility is independent per reducer. On an all-unanswerable Decision
+slice, class metrics are undefined while answerability metrics remain measurable;
+do not discard the whole slice because the source's combined reducer throws.
+Undefined selective risk/false acceptance is serialized as null plus support,
+never NaN in strict JSON. Missing-class F1 uses the registered convention and
+an explicit warning, distinct from an entirely absent metric denominator.
+
 Core offers optional categorical, Bernoulli, ordinal and statistical primitives.
 Profiles register exact conventions, eligible records and target mappings; not
 every specialization must implement accuracy, confidence or selective risk.
