@@ -30,6 +30,19 @@ generality proof. This amendment corrects their contracts without starting code.
 | Core loader could allocate/move a model outside Runtime admission | metadata-only validation, explicit host-admitted materialization, physical allocation receipt/handoff and failure cleanup; CPU as well as device memory charged; A23 |
 | Non-Decision fixtures stopped before full lifecycle | test-only Tiny Beat dataset/train/fresh-process resume/export/load/infer/evaluate gate, real parameter mutation and negative cases; A21 required for M5 |
 
+## Second PR review corrections
+
+| Finding | Resolution and future acceptance |
+|---|---|
+| Artifact loading required the evaluation evidence it was meant to produce | one schema with offline-loadable `research_candidate`/evaluation `pending`; completed artifacts require reports; registration binds evaluated components, never manifest/report/card digests; immutable finalization preserves components; A16/A21 |
+| Python education composition was implicit | Arbitrium driver constructs `arbitrium_education` hooks and imports neutral `maidionis_education`; bound hook/build identity, no Core reverse import or path discovery; A22 |
+
+Checked candidate → registration → admitted load → prediction → evaluation →
+finalization order across artifacts, evaluation, architecture, education, Runtime
+and acceptance contracts. Calibration absence is distinct from pending evaluation;
+invalid/incomplete evidence never satisfies release. These are documentation
+checks and future acceptance obligations, not executed model tests.
+
 ## Boundary review
 
 | Question | Finding |

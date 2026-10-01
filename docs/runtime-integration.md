@@ -36,7 +36,10 @@ an opaque external call as providing those controls.
 ## Proposed registration and invocation
 
 Trusted host configuration maps the capability pin/task to an approved artifact
-digest and prepared provider. It verifies the bundle under its own residency
+digest and prepared provider. Pending `research_candidate` artifacts cannot
+satisfy serving registration even if their hashes and numerical profiles validate;
+completed evidence and external approval must pin the exact served manifest.
+It verifies the bundle under its own residency
 admission, loads once, fixes eval/no-grad and serializes calls. Resource registration
 must account model storage, allocator/framework/context overhead and peak
 transient buffers; no hidden model cache outside Runtime accounting. Changing

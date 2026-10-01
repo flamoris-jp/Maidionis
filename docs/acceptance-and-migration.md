@@ -67,13 +67,13 @@ verification, not a creative model product.
 | A13 | trusted bundle digest and every file/key/shape/codec/calibration binding validated; reject untrusted provenance, symlink/race/extra file and unsupported profile |
 | A14 | finite calibration/T=1/support/gate tie fixtures; policy parameterized; failed gate disables actionable output and raw values never claim calibration |
 | A15 | hand-calculable metrics include zero support/empty acceptance, all-unanswerable and imbalance; missing/duplicate/error predictions invalidate complete release accounting |
-| A16 | preregistration/ledger prevents test-driven selection; exact percentile fixtures; finalization changes reports/card but not evaluated-component digest |
+| A16 | preregistration/ledger prevents test-driven selection; exact percentile fixtures; offline pending candidate loads before evaluation; registration references no manifest/report/card digest; finalization changes manifest/reports/card but not evaluated-component digest; reject invalid pending/completed/status combinations |
 | A17 | Arbitrium fixed-label/order semantics, answerability, ordinal/binary and abstention/error remain compatible under explicit adapter; native/Python codec parity |
 | A18 | Runtime rejects stale/revoked pins/grants, invalid input/output/identity and overflow; success/abstention/model error/provider failure distinct |
 | A19 | serialized worker, late/cancelled/race losing completion fenced; retained resources drain before release; unsupported controls rejected |
 | A20 | state changes after inference block action; no teacher needed during inference; no Core action/Workflow/global-state authority |
-| A21 | one compiled non-Decision fixture traverses frozen dataset → real train → epoch checkpoint/resume → selected-best export → artifact validation/admitted load → inference → complete evaluation, with no Decision imports/defaults; parameter mutation, resume/parity and deliberate corrupt/mismatched records prove production-path use |
-| A22 | Core and its neutral tests build/link without Arbitrium/Runtime; Arbitrium composition explicitly registers all operations; reject duplicate/missing/unknown compiled bindings; Runtime base builds without Decision code; shared operation/build identity used by train/export/infer |
+| A21 | one compiled non-Decision fixture traverses frozen dataset → real train → epoch checkpoint/resume → selected-best export → pending candidate validation/admitted load → inference → complete evaluation → immutable artifact finalization, with no Decision imports/defaults; parameter mutation, resume/parity and deliberate corrupt/mismatched records prove production-path use |
+| A22 | Core and its neutral tests build/link without Arbitrium/Runtime; Arbitrium composition explicitly registers all operations; reject duplicate/missing/unknown compiled bindings; Runtime base builds without Decision code; shared operation/build identity used by train/export/infer; Python driver explicitly supplies bound education hooks, Core imports no Arbitrium, rejects missing/mismatched hooks before transport and performs no path-based discovery |
 | A23 | validation constructs no model/tensor/device context; rejected capacity invokes no materializer; explicit admitted CPU/peak budgets and no automatic device move; failed/expired/stale/overflow loads publish no holder; receipt handoff, retained caches, partial allocation cleanup and exactly-once residency accounting tested with faults; fakes do not qualify real LibTorch bounds |
 
 Tests should exercise production components and deliberate faults, not duplicate
@@ -96,7 +96,7 @@ Runtime, SentencePiece, question/label/order or answerability field is required.
 | Model/objective | small registered two-feature native network with two Bernoulli logits and BCE objective; no categorical/answerability head or target mask |
 | Decode | two fixed sigmoid thresholds in test codec; no confidence/answerability diagnostics, diagnostics schema null |
 | Data | deterministic source scenarios, canonical ancestry/fingerprints, frozen schemas/config/manifest/provenance; split integrity is validated rather than bypassed |
-| Selection/evidence | preregistered `train_diagnostic` selection; synthetic verification/evaluation registration allows calibration `not_applicable`, raw outputs explicitly uncalibrated and artifact `research_only` |
+| Selection/evidence | preregistered `train_diagnostic` selection; synthetic verification/evaluation registration allows calibration `not_applicable`, raw outputs explicitly uncalibrated; candidate `research_candidate`/evaluation `pending`, completed artifact `research_only` |
 
 The implementation pins fixture bytes, oracle/normalization, seed, optimizer,
 schedule, total epochs, selection ties and numerical tolerance **before** running
@@ -120,9 +120,11 @@ Required observable path:
    final parameters, optimizer/schedule/history and selected-best identity with
    the uninterrupted run under the preregistered tolerance. Final and best remain
    separate objects even if the same epoch wins.
-4. Export selected-best, verify prediction parity, assemble a research-only
-   artifact with the permitted absent-calibration record, and validate it using
-   the metadata-only loader. Materialize through an explicit bounded offline
+4. Export selected-best, verify prediction parity, freeze components with the
+   permitted absent-calibration record and bind their digest in the evaluation
+   registration. Assemble an immutable `research_candidate` with evaluation
+   `pending`, no future report digests, and validate it using the metadata-only
+   loader. Materialize through an explicit bounded offline
    host context; no Runtime lifecycle extension is needed for this offline test.
    In-memory pre-export model reuse cannot stand in for actual archive load.
 5. Infer through real envelopes/codec/model/decode on the diagnostic inputs.
@@ -134,11 +136,19 @@ Required observable path:
    Recompute metric denominators from the recorded predictions and compare with
    hand-calculable fixtures. The report binds the same descriptor/component/data
    and evaluation-registration identities at every stage and says train-only
-   synthetic mechanics, not generalization or musical quality.
+   synthetic mechanics, not generalization or musical quality. Predictions
+   retain the candidate manifest digest actually loaded.
+7. Finalize a new immutable `research_only` artifact with completed report/summary
+   and updated card. Assert a new manifest digest, unchanged evaluated-component
+   and registration digests, and successful validation/admitted reload. Compare
+   final-artifact outputs with candidate outputs under the pinned tolerance.
 
 Negative runs corrupt weights/checkpoint inventory, change descriptor/codec,
 exceed a host budget or omit/duplicate a prediction. They must respectively fail
-resume/load/compatibility/admission or complete evaluation accounting. A new
+resume/load/compatibility/admission or complete evaluation accounting. Reject
+pending candidates for production serving, completed statuses without reports,
+finalization with changed components, registration references to final manifests
+and invalid/incomplete evaluation presented as passing release evidence. A new
 process/network-free run must need neither a teacher nor Decision services.
 M2 supplies the composition, M3 proves real train/resume, and M5 completes A21;
 passing only A03/A05 does not satisfy M5. Physical resource bounding/Runtime

@@ -29,6 +29,25 @@ The source transport's type/byte checks occur after receiving a response;
 implementation must enforce streaming/transport byte caps before allocation
 and a true elapsed deadline, rather than claiming a post-hoc check cancels work.
 
+## Python education composition
+
+Arbitrium owns the Python education composition root as well as the native one.
+The proposed `arbitrium_education` package imports `maidionis_education`; an
+Arbitrium experiment driver explicitly constructs specialization hooks and passes
+them to the neutral controller. Maidionis never imports Arbitrium. There is no
+filesystem-path import, dynamic plugin discovery or serialized callable in v1.
+
+The explicit education hook contract supplies immutable task/config identities,
+concept/scenario generation, rendering/prompt templates, target validation,
+verifier/adjudication and audit policy. Core controls bounded provider transport,
+journal/lineage, freeze and finite orchestration, and rejects missing or mismatched
+hooks before provider calls or output publication. Python invokes the trusted
+specialization-owned native driver with bounded argument vectors/files/pipes;
+it does not register Decision defaults in a Core executable or duplicate model
+math. The plan/journal binds education-hook implementation/config and native
+composition build identities so resume cannot silently replace them. Test-only
+neutral education composition supplies its own hooks without importing Arbitrium.
+
 ## Finite cycle
 
 An `EducationPlan` requires experiment ID, descriptor digest, curriculum/prompt

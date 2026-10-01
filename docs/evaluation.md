@@ -67,7 +67,7 @@ and cannot masquerade as calibrated serving results.
 
 An immutable `EvaluationRegistration` has its own ID/version and external digest
 of final record bytes. It fixes experiment ID, dataset/split/family definitions,
-candidate/selection/config/component digests, metric/baseline policy, sample
+selected-model/selection/config/component digests, metric/baseline policy, sample
 requirements, calibration/gate profiles, numerical tolerances and performance
 environment before opening the test suite. Test evaluates a preselected
 candidate; it cannot choose architecture, epoch, seed, gate or next lessons.
@@ -76,7 +76,16 @@ diagnostic test files do not establish sealed evaluation.
 
 The record references the immutable policy/config digest fixed by the education
 or evaluation plan, descriptor and evaluated-component digests; the descriptor
-does not reference it. It owns metrics/error definitions, minimum support,
+does not reference it. The registration never references candidate/final artifact
+manifest digests, report/summary digests or model-card digests. The stable
+`evaluated_component_digest` defined in [artifacts](artifacts.md#export-evaluation-and-registration)
+is its model binding. Predictions record the actual candidate manifest loaded;
+reports may retain that digest as provenance, but it is not a preregistration
+input. Evaluation loads a `research_candidate` with evidence `pending`, then
+finalization adds completed evidence without changing the evaluated components.
+Calibration `not_applicable` is permitted only explicitly; evaluation `pending`
+and `completed` are distinct, and evaluation is never waived as `not_applicable`.
+It owns metrics/error definitions, minimum support,
 thresholds, baselines and readiness/release criteria supplied by the specialization.
 Reports carry the exact registration digest and complete accounting. A changed
 release/support rule creates a new registration and new policy assessment;

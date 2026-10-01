@@ -31,17 +31,29 @@ codec/component versions. Reject unknown profiles; no implicit device fallback.
 `maidionis.artifact.v1` manifest requires `schema_version`, `format_version=1`,
 `artifact_id`, `created_at`, `descriptor_digest`, `training_run_id`, `status`,
 `files`, `compatibility`, `tensor_inventory`, `limits`, `evidence`.
-`status` is `research_only` or `release_candidate`; neither grants deployment.
-`evidence` binds immutable training, calibration and evaluation report digests,
-their evaluated-component digest and exact evaluation registration digest.
-Required records may say `not_applicable` only when that evaluation registration
-explicitly permits the stage's absence. A release candidate requires complete
-passing evidence under the named registration; raw diagnostics remain research-only.
-Operator approval under current policy belongs to an external trusted registry.
+`status` is `research_candidate`, `research_only` or `release_candidate`; none
+of these grants deployment. Evaluation is a required tagged record inside
+`evidence`, with the following closed variants:
+
+| Artifact status | Evaluation evidence |
+|---|---|
+| `research_candidate` | `state=pending`, exact `evaluation_registration_digest` and `evaluated_component_digest`; report/summary digests are absent, not null placeholder claims |
+| `research_only` | `state=completed`, those same bindings and required report/summary digests; failures, train diagnostics and invalid runs remain explicit research evidence |
+| `release_candidate` | `state=completed`, those bindings and complete passing report/summary digests under the named registration |
+
+`pending` means evaluation has not completed. Evaluation itself is never
+`not_applicable`. Calibration is a separate tagged evidence record: completed
+with immutable fit/config/data/report bindings, or `not_applicable` only when
+the named registration permits absence. Training evidence is always required.
+Unknown states, pending evidence in a completed status, completed evidence without
+reports, and release claims from invalid/incomplete runs are rejected. Operator
+approval under current policy belongs to an external trusted registry.
 
 Required files: specialization descriptor, semantic spec, schema/config members,
-resolved model config, weights archive, training metadata, evaluation summary
-and model card. Codec-specific artifacts, calibration and diagnostics schema
+resolved model config, weights archive, training metadata and model card.
+Completed evaluation requires the evaluation report and summary as inventoried
+members; a pending candidate has neither. Its model card explicitly states
+unevaluated/research-only use and cannot claim passing quality. Codec-specific artifacts, calibration and diagnostics schema
 are required exactly when the descriptor and bound calibration configuration select
 them. Diagnostics schema is intrinsic to the descriptor; evaluation/release policy
 is a separate evidence record. `files` inventories
@@ -64,7 +76,7 @@ grants or scheduler access.
 
 | Operation | Input and result | Forbidden side effects |
 |---|---|---|
-| `validate_bundle(source, validation_context)` | caller-selected immutable source and trusted expected digest/compatibility; bounded metadata, complete hash/cross-binding checks; validated description and compiled resource estimate | no tensor/model construction, archive deserialization or device initialization/move |
+| `validate_bundle(source, validation_context)` | caller-selected immutable source and trusted expected digest/compatibility/use purpose; bounded metadata, complete hash/cross-binding and status/evidence checks; validated description and compiled resource estimate | no tensor/model construction, archive deserialization or device initialization/move |
 | `materialize_model(validated_bundle, execution_context)` | validated immutable source, frozen compiled registry and caller-admitted placement/budgets/observer; exact constructed model plus allocation receipt, or failure/cleanup record | no admission decision, fallback placement, unrequested device move, hidden cache or published partial model |
 
 Validation CPU buffers, hashing/I/O and any verified snapshot are charged to the
@@ -75,6 +87,15 @@ races. The validated description binds manifest/descriptor/component digests,
 tensor inventory, required numerical compatibility, maximum input/batch shapes,
 source identity and registry/build identity. Unknown compatibility or missing
 resource estimates fail closed. Sizes from the manifest are not admission grants.
+
+A pending candidate may be validated/materialized only by an explicit bounded
+offline host for calibration or evaluation. Its local inference result echoes
+the candidate manifest digest; predictions additionally bind the stable evaluated
+components and registration. It cannot satisfy production serving admission.
+Finalization creates a new manifest, so candidate and completed artifact digests
+are distinct; never rewrite recorded predictions to pretend the final artifact
+was the object loaded. Runtime serving also requires external approval of the
+exact completed artifact, not merely a completed status.
 
 For serving, Runtime reserves CPU RAM and any selected device capacity **before**
 the worker calls materialization; it also owns the validation admission. For
@@ -148,7 +169,9 @@ reference, not portable Windows durability.
 ## Export, evaluation and registration
 
 Export selected-best checkpoint as a new CPU FP32 candidate. Verify output
-parity, then fit calibration and evaluate exact component bytes. Define
+parity, then fit calibration through the bounded offline host. Freeze the exact
+calibration components (or explicitly permitted absence) before confirmatory
+evaluation. Define
 `evaluated_component_digest` as SHA-256 of canonical sorted inventory JSON for
 descriptor, model config, weights, codec/schema/semantic-spec and calibration
 members: same sorted-key UTF-8 JSON serialization plus LF as shared fixtures.
@@ -161,8 +184,22 @@ whitespace and the complete array ends with one LF. Shared native/Python fixture
 fix string escaping and reject invalid Unicode. No floating-point values occur
 in this inventory digest representation.
 
-Reports bind that digest; final bundle incorporates report hashes without
-changing evaluated components. Finalization revalidates both inventories.
+After component freeze, create the final `EvaluationRegistration` binding the
+policy, descriptor, evaluated components and data before test access. It must
+not reference candidate or final manifest digests, evaluation report/summary
+hashes or model-card hashes. Build an immutable `research_candidate` manifest
+with that registration and evaluation `pending`; validate/admit/load it, then
+infer and evaluate. The candidate inventory excludes future evaluation reports.
+
+Reports bind the registration and evaluated-component digest, and record the
+candidate manifest digest actually loaded as provenance only. Finalization adds
+report/summary/card bytes and emits a new immutable `research_only` or, only
+with complete passing evidence, `release_candidate` manifest. It preserves the
+registration and evaluated components, revalidates both inventories and proves
+their digest unchanged. Failed or incomplete runs cannot yield a release candidate.
+A failed finalization leaves the candidate intact; no in-place status mutation.
+A changed weight/codec/calibration component requires a new registration and
+evaluation, not attachment of old evidence.
 
 Reassessing unchanged components against a new evaluation/release policy binds
 a new registration/report. Republishing those reports creates a new immutable

@@ -85,6 +85,11 @@ links Core without Arbitrium/Runtime; see [acceptance](acceptance-and-migration.
 Each target remains optional to unrelated applications. M1 defines the builder
 surface and M2 proves neutral composition; A2 supplies the actual Decision root.
 
+Python follows the same explicit dependency direction: Arbitrium experiment
+driver → `arbitrium_education` → `maidionis_education`. Specialization hooks are
+constructed by that driver, not discovered by Core; see
+[Python education composition](education.md#python-education-composition).
+
 ## Initial numerical profile
 
 Reuse the demonstrated C++20/CMake/LibTorch CPU FP32 path and SentencePiece
@@ -123,7 +128,8 @@ dependencies. Teachers remain replaceable external education providers.
 |---|---|
 | Dataset | education creates an immutable frozen version after verification |
 | Training run | offline controller fixes config/data, constructs seeded model, trains, checkpoints, records termination |
-| Candidate bundle | offline export binds selected weights, descriptor, tokenizer and calibration/evaluation evidence |
+| Candidate bundle | offline export/calibration freezes selected components; `research_candidate` binds registration with evaluation pending and is offline-loadable |
+| Completed artifact | evaluation produces immutable evidence; new research-only/release-candidate manifest preserves evaluated components and registration |
 | Release registration | human/operator approves an exact digest after required evidence; no automatic promotion |
 | Loaded model | Runtime holds validated immutable weights and accounts residency |
 | Inference invocation | Runtime owns deadline/concurrency; model consumes one immutable bounded input |
