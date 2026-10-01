@@ -147,4 +147,7 @@ objective, admissibility rules and musical metrics. It needs neither canonical
 English question, one class argmax, SentencePiece nor answerability probability.
 The same envelopes, registration, freeze/checkpoint/bundle integrity and Runtime
 admission remain valid. This is a contract thought experiment; no Drum
-architecture, training or music-quality claim is included in this phase.
+architecture, training or music-quality claim is included in this phase. A
+separate test-only Tiny Beat composition must prove the full native lifecycle
+in [A21](acceptance-and-migration.md#non-decision-end-to-end-gate-a21); envelope
+and objective fixtures alone do not establish specialization-neutral Core.

@@ -17,6 +17,19 @@ not certify implementation, model quality, deployment or future acceptance tests
 | New split salt could silently change historical benchmark membership | preserve legacy bytes/readers; neutral-schema conversion is a new derived dataset/experiment |
 | Privacy edits inside hashed research files could invalidate provenance | retain protected original, publish labeled derivative/new digest and explicit mapping/omission; never claim unchanged hash after editing |
 
+## PR review findings corrected
+
+The first PR review identified four ownership/integrity blockers and a missing
+generality proof. This amendment corrects their contracts without starting code.
+
+| Finding | Resolution and future acceptance |
+|---|---|
+| Mutable family IDs controlled split assignment | canonical immutable ancestry fingerprints; alias/correction inheritance, fixed preregistered seed, recomputation and cross-family invalidation; A12 |
+| Descriptor mixed model identity with release/Runtime policy | intrinsic schemas/code/numerical requirements only; separate EvaluationRegistration and Runtime registration digests; policy-only changes preserve model/calibration identity and require new approval/qualification; A02 |
+| Compiled registration had no owner | Arbitrium owns specialization/composition/drivers/provider bridge; Core and Runtime base build without Decision; registry freezes before descriptor resolution; A22 |
+| Core loader could allocate/move a model outside Runtime admission | metadata-only validation, explicit host-admitted materialization, physical allocation receipt/handoff and failure cleanup; CPU as well as device memory charged; A23 |
+| Non-Decision fixtures stopped before full lifecycle | test-only Tiny Beat dataset/train/fresh-process resume/export/load/infer/evaluate gate, real parameter mutation and negative cases; A21 required for M5 |
+
 ## Boundary review
 
 | Question | Finding |
@@ -25,9 +38,9 @@ not certify implementation, model quality, deployment or future acceptance tests
 | Does Runtime keep action and live-state authority? | Core returns values; Runtime owns grants/Jobs/residency/deadlines; caller freshness and action policy checked separately |
 | Are demonstrated source mechanisms reused? | explicit model/mask/training/order/journal/freeze/calibration primitives are mapped; no duplicate Python model |
 | Are source gaps and failures retained? | incomplete bundle/checkpoint/prediction/support/calibration/encoder evidence stated; historic reports stay Arbitrium |
-| Can another bounded domain use the contract? | Drum thought experiment works with finite features/Bernoulli targets without text codec or Decision fields |
+| Can another bounded domain use the contract? | Drum thought experiment and concrete required A21 test-only full lifecycle; no claim it has run yet |
 | Are design and implementation separated? | all docs marked proposal; schemas/CLI/bundle/adapter support await implementation evidence |
-| Is migration concrete? | per-file inventory, function-level split, M1–M5/A1–A3/R1 slices and A01–A20 acceptance cases |
+| Is migration concrete? | per-file inventory, function-level split, specialization-owned composition, M1–M5/A1–A3/R1 slices and A01–A23 acceptance cases |
 | Is publication scoped? | no source history/code/data copied; private source coordinates/personal metadata omitted; public Runtime revision pinned |
 
 ## Verification scope

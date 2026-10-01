@@ -22,7 +22,7 @@ deployment and merge are separate work.
 | test strategy | acceptance cases below |
 | provenance/migration and research ownership | arbitrium-extraction-map.md and datasets.md |
 | public/private boundary | arbitrium-extraction-map.md public migration controls |
-| creative generality | specialization-contract.md Drum substitution |
+| creative generality | specialization-contract.md Drum substitution and A21 non-Decision E2E gate |
 
 ## Focused implementation slices
 
@@ -32,10 +32,10 @@ in this design PR. Keep each meaningful unit committed and verified promptly.
 | Slice | Repository and scope | Acceptance prerequisite |
 |---|---|---|
 | M1 | Maidionis: shared JSON Schemas, strict envelope/descriptor/manifest/prediction validators, explicit registry builder/freeze and neutral fixtures | reviewed field/version/rejection contracts; A01–A03 |
-| M2 | Maidionis: dependency locks, optional numerical components, batch/codec primitives and neutral objectives | M1; A04–A06, clean CPU build; no Decision label defaults |
+| M2 | Maidionis: dependency locks, optional numerical components, batch/codec primitives, neutral objectives and synthetic test composition | M1; A04–A06/A22, clean CPU build; no Decision label defaults |
 | M3 | Maidionis: deterministic training, structured full checkpoints and selected-best export | M2; A07–A09, same-build resume/crash/identity evidence |
 | M4 | Maidionis: education transport/journal/freeze plus generic verification hooks | M1; A10–A12, no live teacher needed for offline checks |
-| M5 | Maidionis: metadata-only validation and explicit host-context materialization, calibration/statistical primitives and complete evaluation accounting | M2–M4; A13–A16/A23; defined persisted schemas before export |
+| M5 | Maidionis: metadata-only validation and explicit host-context materialization, calibration/statistical primitives and complete evaluation accounting | M2–M4; A13–A16/A21/A23; defined persisted schemas before export; non-Decision full lifecycle is a completion gate |
 | A1 | Arbitrium: immutable sanitized research archive and integrity inventory | may precede Core code; original meaning/digests and disclosure verified |
 | A2 | Arbitrium: Decision descriptor/registration, codec, oracle, heads/objective/gate policies, compiled composition root/offline drivers/provider bridge and legacy adapters | relevant M1–M5 contracts; A17/A22; keep legacy data/readers distinct; Runtime integration deferred to R1 |
 | A3 | Arbitrium: new public-architecture controlled reproduction reports | A1/A2; all seeds/scopes/negative evidence reported separately |
@@ -44,7 +44,9 @@ in this design PR. Keep each meaningful unit committed and verified promptly.
 Schemas, tooling names and build/test commands are documented when real code
 exists. No migration combines changes to all three repositories into one
 unreviewable PR. A1 is research publishing, not copying source history or
-claiming Core implementation. No new autonomous education/Drum implementation.
+claiming Core implementation. No new autonomous education or product Drum
+implementation. The bounded synthetic test composition below is required Core
+verification, not a creative model product.
 
 ## Acceptance cases
 
@@ -70,6 +72,7 @@ claiming Core implementation. No new autonomous education/Drum implementation.
 | A18 | Runtime rejects stale/revoked pins/grants, invalid input/output/identity and overflow; success/abstention/model error/provider failure distinct |
 | A19 | serialized worker, late/cancelled/race losing completion fenced; retained resources drain before release; unsupported controls rejected |
 | A20 | state changes after inference block action; no teacher needed during inference; no Core action/Workflow/global-state authority |
+| A21 | one compiled non-Decision fixture traverses frozen dataset → real train → epoch checkpoint/resume → selected-best export → artifact validation/admitted load → inference → complete evaluation, with no Decision imports/defaults; parameter mutation, resume/parity and deliberate corrupt/mismatched records prove production-path use |
 | A22 | Core and its neutral tests build/link without Arbitrium/Runtime; Arbitrium composition explicitly registers all operations; reject duplicate/missing/unknown compiled bindings; Runtime base builds without Decision code; shared operation/build identity used by train/export/infer |
 | A23 | validation constructs no model/tensor/device context; rejected capacity invokes no materializer; explicit admitted CPU/peak budgets and no automatic device move; failed/expired/stale/overflow loads publish no holder; receipt handoff, retained caches, partial allocation cleanup and exactly-once residency accounting tested with faults; fakes do not qualify real LibTorch bounds |
 
@@ -78,6 +81,68 @@ implementation expressions. Unit fixtures establish numerical/contracts only.
 Arbitrium research reruns establish their actual scope; sealed quality,
 performance/GPU qualification and real host enforcement are separate evidence.
 Do not claim the source's recorded passing counts were rerun by this PR.
+
+## Non-Decision end-to-end gate (A21)
+
+Use a **Tiny Beat synthetic test specialization**, owned only by Maidionis's test
+tree. This is a mechanics fixture, not the proposed Drum product or research
+claim. Its compiled composition links Core only; no Arbitrium/Decision package,
+Runtime, SentencePiece, question/label/order or answerability field is required.
+
+| Part | Fixed test obligation |
+|---|---|
+| Input | strict finite `energy` integer 0..100 and `beat_position` integer 0..15; registered feature normalization independent of targets |
+| Target/output | two independently valid booleans, `kick` and `snare`; deterministic fixture oracle supplied by test specialization |
+| Model/objective | small registered two-feature native network with two Bernoulli logits and BCE objective; no categorical/answerability head or target mask |
+| Decode | two fixed sigmoid thresholds in test codec; no confidence/answerability diagnostics, diagnostics schema null |
+| Data | deterministic source scenarios, canonical ancestry/fingerprints, frozen schemas/config/manifest/provenance; split integrity is validated rather than bypassed |
+| Selection/evidence | preregistered `train_diagnostic` selection; synthetic verification/evaluation registration allows calibration `not_applicable`, raw outputs explicitly uncalibrated and artifact `research_only` |
+
+The implementation pins fixture bytes, oracle/normalization, seed, optimizer,
+schedule, total epochs, selection ties and numerical tolerance **before** running
+training. Its immutable grouping projection declares shared scenario/template/
+contrast ancestry, rejects equivalent inputs across families and reports actual
+split counts. Use only the resulting nonempty train split for this train-only
+mechanics proof; do not search seeds/family IDs or relabel held-out rows to get
+more support. No tokenizer or teacher is needed. A separately constructed frozen
+fixture is acceptable only with explicit new identity and test review.
+
+Required observable path:
+
+1. Freeze with the real data/provenance components and native revalidation, then
+   resolve the test's immutable registry/descriptor. Unknown or missing Bernoulli
+   operations fail; nothing supplies a Decision default.
+2. Train actual Core model/optimizer components in the exact serialized CPU FP32
+   profile. Assert finite nonzero gradients and changed parameters after updates,
+   so a validator-only/stub training pass cannot satisfy the gate.
+3. Save a real epoch-boundary checkpoint after at least one optimizer update;
+   resume in a fresh process and perform at least one further update. Compare
+   final parameters, optimizer/schedule/history and selected-best identity with
+   the uninterrupted run under the preregistered tolerance. Final and best remain
+   separate objects even if the same epoch wins.
+4. Export selected-best, verify prediction parity, assemble a research-only
+   artifact with the permitted absent-calibration record, and validate it using
+   the metadata-only loader. Materialize through an explicit bounded offline
+   host context; no Runtime lifecycle extension is needed for this offline test.
+   In-memory pre-export model reuse cannot stand in for actual archive load.
+5. Infer through real envelopes/codec/model/decode on the diagnostic inputs.
+   Compare loaded-model logits within tolerance and boolean outputs exactly;
+   threshold-adjacent cases require explicit registered handling. Verify null
+   diagnostics and absence of class/answerability requirements.
+6. Produce one prediction per admitted input, join targets outside forward and
+   evaluate both Bernoulli outputs with the registered reducer/support rules.
+   Recompute metric denominators from the recorded predictions and compare with
+   hand-calculable fixtures. The report binds the same descriptor/component/data
+   and evaluation-registration identities at every stage and says train-only
+   synthetic mechanics, not generalization or musical quality.
+
+Negative runs corrupt weights/checkpoint inventory, change descriptor/codec,
+exceed a host budget or omit/duplicate a prediction. They must respectively fail
+resume/load/compatibility/admission or complete evaluation accounting. A new
+process/network-free run must need neither a teacher nor Decision services.
+M2 supplies the composition, M3 proves real train/resume, and M5 completes A21;
+passing only A03/A05 does not satisfy M5. Physical resource bounding/Runtime
+qualification remains A23/R1, separate from an offline mechanics success.
 
 ## Design review and stop condition
 

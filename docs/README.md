@@ -6,15 +6,15 @@ evidence in later PRs; source research test results are not Maidionis test resul
 
 | Read | Contract |
 |---|---|
-| [Architecture](architecture.md) | ownership, dependencies, lifecycle, language and source layout |
+| [Architecture](architecture.md) | ownership, compiled composition root, dependencies, lifecycle, language and source layout |
 | [Specialization](specialization-contract.md) | identity, registration, bounded input/output, model components |
 | [Datasets](datasets.md) | sample/manifest envelope, freeze, split and provenance boundaries |
 | [Education](education.md) | reviewed lessons, finite training cycles and reproducibility |
-| [Artifacts](artifacts.md) | checkpoint integrity, bundle binding, loading and compatibility |
+| [Artifacts](artifacts.md) | checkpoint integrity, bundle binding, metadata validation, admitted materialization and compatibility |
 | [Evaluation](evaluation.md) | measurement, calibration, release evidence and denominators |
 | [Runtime integration](runtime-integration.md) | existing Runtime seams, proposed adapter and state authority |
 | [Extraction map](arbitrium-extraction-map.md) | source inventory, four-way classification and known gaps |
-| [Acceptance and migration](acceptance-and-migration.md) | Issue coverage, focused implementation PRs and checks |
+| [Acceptance and migration](acceptance-and-migration.md) | Issue coverage, focused implementation PRs, A01–A23 checks and non-Decision E2E gate |
 | [Design self-review](design-review.md) | corrected findings, verification and remaining implementation gates |
 
 Within this proposal, the tables specifying required fields, invariants and
