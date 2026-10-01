@@ -33,7 +33,8 @@ and a true elapsed deadline, rather than claiming a post-hoc check cancels work.
 
 An `EducationPlan` requires experiment ID, descriptor digest, curriculum/prompt
 config digests, approved provider identities, verifier/audit policy, split/data
-references, training/calibration/evaluation profiles and explicit maximum cycles,
+references, resolved training/selection configuration, separate calibration config
+and evaluation registration digests, and explicit maximum cycles,
 attempts, examples, elapsed time and output/storage bytes. Every maximum is
 positive and finite. No sentinel meaning unlimited is allowed in a registered
 run. Policy belongs to the specialization; Core checks bounds and accounting.

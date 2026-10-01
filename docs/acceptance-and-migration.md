@@ -51,7 +51,7 @@ claiming Core implementation. No new autonomous education/Drum implementation.
 | ID | Observable obligation and meaningful negative case |
 |---|---|
 | A01 | native/Python strict parsing agree; reject duplicate/unknown keys, coercion, invalid UTF-8, unsupported versions, deep/oversized payload and nonfinite values |
-| A02 | descriptor pins schema/code/config; reject unknown component, missing schema member, mismatched task/version and request-supplied artifact path |
+| A02 | descriptor pins intrinsic schema/code/config/numerical compatibility only; changing release minimum support or Runtime cancellability leaves its digest/calibration components unchanged, changes the appropriate registration and never inherits old approval; reject unknown component, missing schema, mismatched task/version and request-supplied artifact path |
 | A03 | neutral non-Decision fixture traverses envelopes/registry/data boundaries without question, labels or answerability requirements |
 | A04 | padding/batch/single/eval/archive parity for optional pooled/encoder components; reject dimension/dtype/mask overflow; preserve finite gradients |
 | A05 | Decision loss masking does not index invalid targets; objective is selected by composition; other objective needs no answerability tensor |

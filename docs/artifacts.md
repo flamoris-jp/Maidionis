@@ -32,16 +32,19 @@ codec/component versions. Reject unknown profiles; device fallback is explicit.
 `artifact_id`, `created_at`, `descriptor_digest`, `training_run_id`, `status`,
 `files`, `compatibility`, `tensor_inventory`, `limits`, `evidence`.
 `status` is `research_only` or `release_candidate`; neither grants deployment.
-`evidence` binds immutable training, calibration and evaluation report digests
-and their evaluated-component digest. Required records may say `not_applicable`
-only when the registered profile explicitly permits that stage's absence.
-A release candidate requires complete passing evidence; raw diagnostics remain
-research-only. Operator release approval belongs to an external trusted registry.
+`evidence` binds immutable training, calibration and evaluation report digests,
+their evaluated-component digest and exact evaluation registration digest.
+Required records may say `not_applicable` only when that evaluation registration
+explicitly permits the stage's absence. A release candidate requires complete
+passing evidence under the named registration; raw diagnostics remain research-only.
+Operator approval under current policy belongs to an external trusted registry.
 
 Required files: specialization descriptor, semantic spec, schema/config members,
 resolved model config, weights archive, training metadata, evaluation summary
 and model card. Codec-specific artifacts, calibration and diagnostics schema
-are required exactly when the descriptor/profile selects them. `files` inventories
+are required exactly when the descriptor and bound calibration configuration select
+them. Diagnostics schema is intrinsic to the descriptor; evaluation/release policy
+is a separate evidence record. `files` inventories
 all members except manifest and includes regular relative path, SHA-256 and
 byte size. No extra/unlisted members. No self-hash in manifest. Model card states
 license/provenance, intended use, known failures and actual supported profile.
@@ -111,6 +114,12 @@ in this inventory digest representation.
 
 Reports bind that digest; final bundle incorporates report hashes without
 changing evaluated components. Finalization revalidates both inventories.
+
+Reassessing unchanged components against a new evaluation/release policy binds
+a new registration/report. Republishing those reports creates a new immutable
+bundle/manifest digest, while the descriptor/evaluated-component digest stays
+unchanged. Old bundles and their evidence remain intact. Runtime control or
+placement policy is external registration data, never part of the model descriptor.
 
 External registration records final manifest digest and approval policy/evidence;
 artifact metadata cannot self-authorize production. Rollback selects another

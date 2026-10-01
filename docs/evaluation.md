@@ -10,7 +10,9 @@ digest, split, descriptor/artifact/component digest, selection scope,
 calibration status, model result, target joined outside forward, registered
 raw-output schema/payload, timing/profile and error status. Its JSON Schema is
 part of the first implementation contract slice. Labels/provenance never enter
-`forward`; the evaluator joins them after inference.
+`forward`; the evaluator joins them after inference. Prediction runs bind an
+`evaluation_registration_digest`; this policy identity is separate from the
+descriptor and from any Runtime capability fingerprint.
 
 One result per admitted sample. Record framing errors, missing/duplicate IDs,
 numerical errors and incomplete execution; do not shrink denominators until
@@ -28,7 +30,7 @@ never NaN in strict JSON. Missing-class F1 uses the registered convention and
 an explicit warning, distinct from an entirely absent metric denominator.
 
 Core offers optional categorical, Bernoulli, ordinal and statistical primitives.
-Profiles register exact conventions, eligible records and target mappings; not
+Evaluation registrations fix exact conventions, eligible records and target mappings; not
 every specialization must implement accuracy, confidence or selective risk.
 For Decision, raw class metrics on answerable records and answerability metrics
 on all records have separate denominators. Confusion matrices retain canonical
@@ -63,13 +65,26 @@ and cannot masquerade as calibrated serving results.
 
 ## Registration and independent evaluation
 
-An `EvaluationRegistration` fixes experiment ID, dataset/split/family definitions,
+An immutable `EvaluationRegistration` has its own ID/version and external digest
+of final record bytes. It fixes experiment ID, dataset/split/family definitions,
 candidate/selection/config/component digests, metric/baseline policy, sample
 requirements, calibration/gate profiles, numerical tolerances and performance
 environment before opening the test suite. Test evaluates a preselected
 candidate; it cannot choose architecture, epoch, seed, gate or next lessons.
 Access ledger stores admitted identity/reason/time/report digest. Public
 diagnostic test files do not establish sealed evaluation.
+
+The record references descriptor and evaluated-component digests; the descriptor
+does not reference it. It owns metrics/error definitions, minimum support,
+thresholds, baselines and readiness/release criteria supplied by the specialization.
+Reports carry the exact registration digest and complete accounting. A changed
+release/support rule creates a new registration and new policy assessment;
+previous approval is never inherited implicitly. Reuse unchanged raw predictions
+only when data access, component bindings and preregistration rules permit it,
+and explicitly mark retrospective assessments. They are not new independent
+held-out evidence. A policy-only edit neither changes model identity nor forces
+refitting an unchanged calibrated component. Changes to fitting/selection inputs,
+algorithms or numerical compatibility require refitting/reevaluation as applicable.
 
 Bootstrap resamples families with paired model results. Register replicate
 count, RNG algorithm/seed and **exact percentile convention** before computing
