@@ -1,0 +1,239 @@
+{
+  "$id": "maidionis.education-plan.v1",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "calibration_config_digest": {
+      "anyOf": [
+        {
+          "type": "null"
+        },
+        {
+          "maxLength": 64,
+          "minLength": 1,
+          "pattern": "^[a-f0-9]{64}$",
+          "type": "string"
+        }
+      ]
+    },
+    "curriculum_digest": {
+      "maxLength": 64,
+      "minLength": 1,
+      "pattern": "^[a-f0-9]{64}$",
+      "type": "string"
+    },
+    "dataset_references": {
+      "items": {
+        "additionalProperties": false,
+        "properties": {
+          "digest": {
+            "maxLength": 64,
+            "minLength": 1,
+            "pattern": "^[a-f0-9]{64}$",
+            "type": "string"
+          },
+          "id": {
+            "maxLength": 128,
+            "minLength": 1,
+            "pattern": "^[A-Za-z0-9._:-]{1,128}$",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "digest"
+        ],
+        "type": "object"
+      },
+      "maxItems": 100,
+      "minItems": 0,
+      "type": "array",
+      "uniqueItems": false
+    },
+    "descriptor_digest": {
+      "maxLength": 64,
+      "minLength": 1,
+      "pattern": "^[a-f0-9]{64}$",
+      "type": "string"
+    },
+    "evaluation_policy_digest": {
+      "maxLength": 64,
+      "minLength": 1,
+      "pattern": "^[a-f0-9]{64}$",
+      "type": "string"
+    },
+    "experiment_id": {
+      "maxLength": 128,
+      "minLength": 1,
+      "pattern": "^[A-Za-z0-9._:-]{1,128}$",
+      "type": "string"
+    },
+    "hook_identity": {
+      "additionalProperties": false,
+      "properties": {
+        "config_digest": {
+          "maxLength": 64,
+          "minLength": 1,
+          "pattern": "^[a-f0-9]{64}$",
+          "type": "string"
+        },
+        "id": {
+          "maxLength": 128,
+          "minLength": 1,
+          "pattern": "^[A-Za-z0-9._:-]{1,128}$",
+          "type": "string"
+        },
+        "version": {
+          "maxLength": 128,
+          "minLength": 1,
+          "pattern": "^[A-Za-z0-9._:-]{1,128}$",
+          "type": "string"
+        }
+      },
+      "required": [
+        "id",
+        "version",
+        "config_digest"
+      ],
+      "type": "object"
+    },
+    "max_attempts": {
+      "maximum": 1000000,
+      "minimum": 1,
+      "type": "integer"
+    },
+    "max_cycles": {
+      "maximum": 1000,
+      "minimum": 1,
+      "type": "integer"
+    },
+    "max_elapsed_seconds": {
+      "maximum": 86400,
+      "minimum": 1,
+      "type": "integer"
+    },
+    "max_examples": {
+      "maximum": 1000000,
+      "minimum": 1,
+      "type": "integer"
+    },
+    "max_output_bytes": {
+      "maximum": 1073741824,
+      "minimum": 1,
+      "type": "integer"
+    },
+    "native_build_digest": {
+      "maxLength": 64,
+      "minLength": 1,
+      "pattern": "^[a-f0-9]{64}$",
+      "type": "string"
+    },
+    "prompt_digest": {
+      "maxLength": 64,
+      "minLength": 1,
+      "pattern": "^[a-f0-9]{64}$",
+      "type": "string"
+    },
+    "providers": {
+      "items": {
+        "additionalProperties": false,
+        "properties": {
+          "config_digest": {
+            "maxLength": 64,
+            "minLength": 1,
+            "pattern": "^[a-f0-9]{64}$",
+            "type": "string"
+          },
+          "id": {
+            "maxLength": 128,
+            "minLength": 1,
+            "pattern": "^[A-Za-z0-9._:-]{1,128}$",
+            "type": "string"
+          },
+          "version": {
+            "maxLength": 128,
+            "minLength": 1,
+            "pattern": "^[A-Za-z0-9._:-]{1,128}$",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "version",
+          "config_digest"
+        ],
+        "type": "object"
+      },
+      "maxItems": 16,
+      "minItems": 0,
+      "type": "array",
+      "uniqueItems": false
+    },
+    "schema_version": {
+      "const": "maidionis.education-plan.v1"
+    },
+    "selection_config_digest": {
+      "maxLength": 64,
+      "minLength": 1,
+      "pattern": "^[a-f0-9]{64}$",
+      "type": "string"
+    },
+    "training_config_digest": {
+      "maxLength": 64,
+      "minLength": 1,
+      "pattern": "^[a-f0-9]{64}$",
+      "type": "string"
+    },
+    "verification_profile": {
+      "additionalProperties": false,
+      "properties": {
+        "config_digest": {
+          "maxLength": 64,
+          "minLength": 1,
+          "pattern": "^[a-f0-9]{64}$",
+          "type": "string"
+        },
+        "id": {
+          "maxLength": 128,
+          "minLength": 1,
+          "pattern": "^[A-Za-z0-9._:-]{1,128}$",
+          "type": "string"
+        },
+        "version": {
+          "maxLength": 128,
+          "minLength": 1,
+          "pattern": "^[A-Za-z0-9._:-]{1,128}$",
+          "type": "string"
+        }
+      },
+      "required": [
+        "id",
+        "version",
+        "config_digest"
+      ],
+      "type": "object"
+    }
+  },
+  "required": [
+    "schema_version",
+    "experiment_id",
+    "descriptor_digest",
+    "hook_identity",
+    "native_build_digest",
+    "curriculum_digest",
+    "prompt_digest",
+    "providers",
+    "verification_profile",
+    "dataset_references",
+    "training_config_digest",
+    "selection_config_digest",
+    "calibration_config_digest",
+    "evaluation_policy_digest",
+    "max_cycles",
+    "max_attempts",
+    "max_examples",
+    "max_elapsed_seconds",
+    "max_output_bytes"
+  ],
+  "type": "object"
+}
