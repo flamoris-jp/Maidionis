@@ -26,11 +26,13 @@ class TransportLimits:
 
 class HTTPProvider:
     """Opt-in HTTPS; socket deadlines and bounded chunk reads before allocation."""
-    def __init__(self, origin, *, remote_opt_in=False, limits=TransportLimits()):
+    def __init__(self, origin, *, remote_opt_in=False, limits=TransportLimits(), identity=None):
+        import copy
         u=urlsplit(origin); limits.check()
         if not remote_opt_in or u.scheme!='https' or not u.hostname or u.username or u.password or u.query or u.fragment:
             raise ValueError('trusted HTTPS origin and explicit remote opt-in required')
         self.origin=u; self.limits=limits
+        self.identity=copy.deepcopy(identity)
     def __call__(self, request, deadline, cancelled):
         # A socket timeout alone cannot bound DNS/TLS/header/body phases together.
         # The host kills and waits for this disposable Linux worker on deadline.

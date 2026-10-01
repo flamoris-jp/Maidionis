@@ -1,5 +1,7 @@
 # Specialization and inference contract
 
+See [implementation status](implementation-status.md) for the initial implemented CPU profile and deferred qualifications. The reviewed boundary below includes broader profiles.
+
 Status: proposed v1; field tables are implementation requirements, not shipped APIs.
 
 ## Identity and descriptor

@@ -1,5 +1,7 @@
 # Dataset, manifest and provenance contract
 
+See [implementation status](implementation-status.md) for the initial implemented CPU profile and deferred qualifications. The reviewed boundary below includes broader profiles.
+
 Status: proposed v1. Historical Decision data remains in Arbitrium.
 
 ## Sample and provenance separation

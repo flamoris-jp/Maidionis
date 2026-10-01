@@ -95,7 +95,8 @@ class Lifecycle(unittest.TestCase):
             self.assertEqual(self.full[k],self.resumed[k],k)
         self.assertGreater(self.resumed['state']['global_step'],self.first['state']['global_step'])
     def test_archive_inference_and_immutable_finalization(self):
-        run('validate',self.composition,self.candidate,self.candidate_digest,'offline_evaluation')
+        metadata=run('validate',self.composition,self.candidate,self.candidate_digest,'offline_evaluation')
+        self.assertEqual(metadata['model_constructions'],0)
         final=self.infer(self.final,self.final_digest)
         self.assertNotEqual(self.candidate_digest,self.final_digest)
         self.assertEqual(self.loaded['component_digest'],final['component_digest'])
@@ -123,6 +124,8 @@ class Lifecycle(unittest.TestCase):
             (2**20,AS_CAP,'expire_after_load')]:
             run('infer',self.composition,self.candidate,self.candidate_digest,64*2**20,AS_CAP,persistent,peak,fault,success=False)
         run('validate',self.composition,self.candidate,self.candidate_digest,'serving',success=False)
+        rejected=run('infer',self.composition,self.candidate,self.candidate_digest,64*2**20,AS_CAP,1,AS_CAP,'before_construct',success=False)
+        self.assertIn(b'budget rejected before constructor',rejected.stderr)
     def test_bundle_mutation_shape_extra_symlink_and_evidence(self):
         import shutil
         for index,kind in enumerate(('weights','shape','extra','symlink','status','unknown_profile','registration','self_inventory')):

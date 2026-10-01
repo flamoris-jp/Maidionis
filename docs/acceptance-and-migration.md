@@ -1,8 +1,9 @@
 # Acceptance and implementation migration plan
 
-Status: design completion proposal for [Issue #1](https://github.com/flamoris-jp/Maidionis/issues/1).
-This PR stops at reviewable design. Implementation, research migration, release,
-deployment and merge are separate work.
+Status: reviewed design baseline for [Issue #1](https://github.com/flamoris-jp/Maidionis/issues/1).
+Initial Core M1–M5 implementation is tracked in [Issue #4](https://github.com/flamoris-jp/Maidionis/issues/4).
+See [implementation status](implementation-status.md) for tested acceptance and profile limits.
+Arbitrium migration, Runtime integration, release qualification and merge remain separate.
 
 ## Issue coverage
 

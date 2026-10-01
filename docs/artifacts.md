@@ -1,7 +1,9 @@
 # Checkpoints, artifacts and reproducibility
 
-Status: proposed v1. Source training checkpoints are partially implemented;
-the complete serving bundle/loader is not. See the [extraction map](arbitrium-extraction-map.md).
+Status: reviewed v1 boundary. Full epoch checkpoints and an immutable offline
+CPU bundle validator/materializer are implemented in the initial Core profile;
+serving handoff, calibrated archive profiles and production qualification remain
+separate. See [implementation status](implementation-status.md).
 
 ## Identity and compatibility
 

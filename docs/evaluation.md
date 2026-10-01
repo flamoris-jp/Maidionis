@@ -1,5 +1,7 @@
 # Evaluation and calibration contracts
 
+See [implementation status](implementation-status.md) for the initial implemented CPU profile and deferred qualifications. The reviewed boundary below includes broader profiles.
+
 Status: proposed v1. Numerical primitives are reusable; task metrics and release
 policies belong to the specialization.
 

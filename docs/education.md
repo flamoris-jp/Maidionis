@@ -1,5 +1,7 @@
 # Education and native training
 
+See [implementation status](implementation-status.md) for the initial implemented CPU profile and deferred qualifications. The reviewed boundary below includes broader profiles.
+
 Status: proposed v1. Education is finite offline work; inference never teaches itself.
 
 ## Candidate review and provider contracts
