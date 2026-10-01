@@ -59,7 +59,9 @@ def loads(raw: bytes | str, max_bytes=65536):
 def schema(name):
     expected=SCHEMA_DIGESTS.get(name)
     if expected is None: raise ValueError('unknown pinned schema')
-    raw=files('maidionis_contracts').joinpath(name+'.schema.json').read_bytes()
+    with files('maidionis_contracts').joinpath(name+'.schema.json').open('rb') as source:
+        raw=source.read(4*1024*1024+1)
+    if len(raw)>4*1024*1024: raise ValueError('persisted schema byte limit')
     if digest(raw)!=expected: raise ValueError('persisted schema digest mismatch')
     return loads(raw,4*1024*1024)
 

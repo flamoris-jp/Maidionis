@@ -1,4 +1,5 @@
 import copy
+import io
 import os
 from pathlib import Path
 import subprocess
@@ -19,9 +20,10 @@ class Contracts(unittest.TestCase):
             with self.assertRaises(ValueError):validate(value,closed)
     def test_packaged_schema_substitution_rejected(self):
         self.assertEqual(schema('request')['$id'],'maidionis.request.v1')
-        resource=MagicMock();resource.joinpath.return_value.read_bytes.return_value=b'{}\n'
-        with patch('maidionis_education.contracts.files',return_value=resource):
-            with self.assertRaises(ValueError):schema('request')
+        for raw in (b'{}\n',b' '*(4*1024*1024+1)):
+            resource=MagicMock();resource.joinpath.return_value.open.return_value=io.BytesIO(raw)
+            with patch('maidionis_education.contracts.files',return_value=resource):
+                with self.assertRaises(ValueError):schema('request')
         for name in ('../request','not-compiled'):
             with self.assertRaises(ValueError):schema(name)
     def test_strict_parser(self):
