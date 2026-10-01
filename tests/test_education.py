@@ -26,6 +26,31 @@ class Fake:
         if isinstance(v,Exception): raise v
         return v
 class Education(unittest.TestCase):
+    def test_concurrent_controller_rejected_before_provider_calls_and_budget_changes(self):
+        with tempfile.TemporaryDirectory() as td:
+            x=dict(energy=100,beat_position=15);raw=canonical(oracle(x));p=plan();p['max_examples']=1
+            teacher=Fake([raw]);reviewer=Fake([raw])
+            second=Controller(p,education_hooks(),td,teacher,reviewer)
+            outer=self
+            class Overlap(Fake):
+                def __call__(self,*args):
+                    with outer.assertRaises(BlockingIOError):second.cycle(1,[x])
+                    outer.assertFalse(teacher.calls+reviewer.calls)
+                    return super().__call__(*args)
+            first=Controller(p,education_hooks(),td,Overlap([raw]),Fake([raw]))
+            self.assertEqual(first.cycle(0,[x])[0]['status'],'verified')
+            events=first.journal._events()[1]
+            self.assertEqual(sum(e['event']=='adjudication' for e in events),1)
+            self.assertEqual(sum(e['event']=='attempt' for e in events),2)
+            with self.assertRaises(ValueError):second.cycle(1,[x])
+            self.assertFalse(teacher.calls+reviewer.calls)
+            self.assertEqual(second.cycle(0,[x])[0]['status'],'verified')
+        # Exceptions release the controller lease for explicit recovery.
+        with tempfile.TemporaryDirectory() as td:
+            failed=Controller(plan(),education_hooks(),td,Fake([]),Fake([]),cancelled=lambda:True)
+            with self.assertRaises(TransportError):failed.cycle(0,[x])
+            recovered=Controller(plan(),education_hooks(),td,Fake([raw]),Fake([raw]))
+            self.assertEqual(recovered.cycle(0,[x])[0]['status'],'verified')
     def test_isolated_transport_deadline_oversize_truncation_and_cleanup(self):
         provider=HTTPProvider('https://offline.invalid',remote_opt_in=True,limits=TransportLimits(seconds=.1))
         before={p.pid for p in multiprocessing.active_children()}

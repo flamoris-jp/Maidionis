@@ -7,7 +7,7 @@ import time
 import multiprocessing
 from urllib.parse import urlsplit
 from .contracts import canonical, digest, loads, record
-from .storage import Journal
+from .storage import Journal,writer
 
 class TransportError(ValueError):
     def __init__(self, message, retryable=False):
@@ -178,6 +178,11 @@ class Controller:
             self.journal.commit(stage,key,dict(request_digest=request_digest,response=response))
             return response
     def cycle(self,cycle,inputs):
+        # Hold the experiment lease across budget checks and provider calls,
+        # not only individual journal writes. Concurrent controllers fail closed.
+        with writer(self.journal.root/'controller.lock'):
+            return self._cycle(cycle,inputs)
+    def _cycle(self,cycle,inputs):
         if type(cycle) is not int or not 0<=cycle<self.plan['max_cycles']: raise ValueError('cycle bound')
         if not isinstance(inputs,list): raise ValueError('input list required')
         _,events,_=self.journal._events()

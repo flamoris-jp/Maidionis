@@ -70,6 +70,11 @@ stage outputs support restart. Reject corrupt/partially committed journal
 entries; recovery is explicit. Journal durability does not prove remote work
 was never attempted or give exactly-once provider behavior.
 
+The initial controller holds an exclusive experiment lease for the entire
+cycle, including budget checks, provider calls and adjudication. Another
+controller targeting the same journal fails before remote work; releasing
+the lease after success or failure allows replay or explicit recovery.
+
 The plan fixes evaluation policy before candidate selection. The final
 `EvaluationRegistration` adds the exact selected component/calibration/data
 bindings after export, before any confirmatory test access. It does not need to
