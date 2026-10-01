@@ -30,12 +30,15 @@ class EvaluationLedger:
         if self.journal.replay('evaluation:access') is not None: raise ValueError('evaluation access already admitted')
         self.journal.commit('access','evaluation:access',dict(registration_digest=h,reason=reason))
 
-def evaluate(rows,predictions,registration,registry,*,run_id,artifact_digest,reducers,passing_policy):
+def evaluate(rows,predictions,registration,registry,*,run_id,artifact_digest,reducers,passing_policy,baselines=None):
     record('evaluation-registration',registration)
     rh=digest(canonical(registration)); errors=[]; ids={}; seen=set(); good=[]
     if registration['descriptor_digest']!=digest(canonical(registry.descriptor)): raise ValueError('evaluation descriptor')
     if set(reducers)!={(r['id'],r['version'],r['config_digest']) for r in registration['metrics']}:
         raise ValueError('explicit reducer bindings')
+    baselines={} if baselines is None else baselines
+    if set(baselines)!={(r['id'],r['version'],r['config_digest']) for r in registration['baselines']}:
+        raise ValueError('explicit baseline bindings')
     for row in rows:
         registry.sample(row)
         if row['split']!=registration['split'] or row['sample_id'] in ids: raise ValueError('expected sample framing')
@@ -70,6 +73,8 @@ def evaluate(rows,predictions,registration,registry,*,run_id,artifact_digest,red
     metrics=[]
     for ref in registration['metrics']:
         metrics.extend(reducers[(ref['id'],ref['version'],ref['config_digest'])](good))
+    for ref in registration['baselines']:
+        metrics.extend(baselines[(ref['id'],ref['version'],ref['config_digest'])](rows))
     report=record('evaluation-report',dict(schema_version='maidionis.evaluation-report.v1',experiment_id=registration['experiment_id'],
         run_id=run_id,descriptor_digest=registration['descriptor_digest'],evaluated_component_digest=registration['evaluated_component_digest'],
         evaluation_registration_digest=rh,dataset_digest=registration['dataset_digest'],artifact_digest=artifact_digest,

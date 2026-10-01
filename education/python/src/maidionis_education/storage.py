@@ -138,6 +138,7 @@ class Journal:
         from .contracts import record
         for line in raw.splitlines():
             e = record('journal-event', loads(line))
+            if canonical(e)!=line+b'\n': raise ValueError('noncanonical journal event')
             if e['sequence'] != len(events) or e['previous_digest'] != previous or e['plan_digest'] != self.plan or e['key'] in keys:
                 raise ValueError('journal identity/chain')
             b = read(self.root / (e['content_digest']+'.json'), self.max_bytes)

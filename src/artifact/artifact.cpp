@@ -69,10 +69,11 @@ ValidatedBundle validate_bundle(const std::filesystem::path& root,const Numerica
 }
 struct BundleAccess {static const Files& files(const ValidatedBundle& v){return v.files_;}};
 LoadedBundle materialize_model(const ValidatedBundle& bundle,const NumericalComposition& c,const OfflineContext& ctx){
+ std::lock_guard<std::recursive_mutex> numerical(numerical_mutex());
  need(bool(ctx.current)&&ctx.current()&&!ctx.operation_id.empty()&&ctx.profile=="linux.cpu.fp32.serial.v1","current explicit offline admission");
  struct rlimit limit;need(::getrlimit(RLIMIT_AS,&limit)==0&&limit.rlim_cur!=RLIM_INFINITY&&limit.rlim_cur<=ctx.process_address_space_budget,"qualified process address-space enforcement required");
  const auto& f=BundleAccess::files(bundle);need(bundle.manifest()["compatibility"]["build_digest"]==c.registry.build_digest()&&f.at("descriptor.json")==canonical(c.registry.descriptor()),"materialization composition binding");
- need(bundle.parameter_bytes()<=ctx.persistent_budget&&f.at("weights.pt").size()+bundle.parameter_bytes()*3<=ctx.peak_transient_budget,"materialization budget rejected before constructor");
+ need(limit.rlim_cur<=ctx.peak_transient_budget&&bundle.parameter_bytes()<=ctx.persistent_budget&&f.at("weights.pt").size()+bundle.parameter_bytes()*3<=ctx.peak_transient_budget,"materialization budget rejected before constructor");
  auto point=[&](const std::string& stage){if(ctx.fault)ctx.fault(stage);need(ctx.current(),"expired materialization admission");};
  point("before_construct");auto m=std::make_shared<Model>(c.model_config);point("after_construct");load_model_bytes(m,f.at("weights.pt"));point("after_load");m->eval();
  need(sorted_tensors(tensor_inventory(m))==sorted_tensors(bundle.manifest()["tensor_inventory"]),"loaded tensor inventory");

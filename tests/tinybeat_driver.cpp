@@ -24,16 +24,18 @@ int main(int argc,char** argv){try {
     std::cout<<canonical(Json{{"predictions",predictions},{"receipt",loaded.receipt},{"component_digest",bundle.manifest()["evidence"]["evaluation"]["evaluated_component_digest"]}});return 0;
   }
   if(argc==6&&std::string(argv[1])=="validate"){
+    auto before=model_construction_count();
     auto c=tinybeat_composition(argv[2]);auto bundle=validate_bundle(argv[3],c,ValidationContext{argv[4],true,argv[5],512*1024*1024});
-    std::cout<<canonical(Json{{"manifest_digest",bundle.digest()},{"parameter_bytes",bundle.parameter_bytes()},{"tensor_constructions",0}});return 0;
+    auto delta=model_construction_count()-before;if(delta)throw std::runtime_error("metadata validation constructed a model");
+    std::cout<<canonical(Json{{"manifest_digest",bundle.digest()},{"parameter_bytes",bundle.parameter_bytes()},{"model_constructions",delta}});return 0;
   }
-  if(argc!=8||std::string(argv[1])!="train")throw std::invalid_argument("usage: tinybeat_driver train dataset digest checkpoint-root output epochs-this-call resume");
+  if((argc!=8&&argc!=9)||std::string(argv[1])!="train")throw std::invalid_argument("usage: tinybeat_driver train dataset digest checkpoint-root output epochs-this-call resume [fault]");
   auto c=tinybeat_composition(argv[2]);auto data=training_data(argv[2],argv[3],c);TrainingConfig config;
   auto initial=make_seeded_model(c.model_config,config.seed);auto initial_bytes=save_model_bytes(initial);
-  auto result=train(c,data,config,argv[4],std::string(argv[7])=="1",std::stoll(argv[6]));
+  auto result=train(c,data,config,argv[4],std::string(argv[7])=="1",std::stoll(argv[6]),[&](const std::string& stage){if(argc==9&&stage==argv[8])throw std::runtime_error("injected training publication fault");});
   Files files={{"final.pt",save_model_bytes(result.final_model)},{"best.pt",save_model_bytes(result.best_model)},
     {"state.json",canonical(result.state)},{"model.config.json",canonical(c.model_config.json())},{"training.json",canonical(Json{{"training_run_id","test:train:1"},{"config",config.json()},{"state",result.state},
-    {"checkpoint_digest",result.checkpoint_digest},{"dataset_digest",data.manifest_digest},{"environment_digest",sha256(numerical_environment())},
+    {"checkpoint_digest",result.checkpoint_digest},{"dataset_digest",data.manifest_digest()},{"environment_digest",sha256(numerical_environment())},
     {"descriptor_digest",sha256(canonical(c.registry.descriptor()))},{"build_digest",c.registry.build_digest()},{"model_config",c.model_config.json()},
     {"weights_digest",sha256(save_model_bytes(result.best_model))}})}};
   Json summary={{"state",result.state},{"gradient_l1",result.gradient_l1},{"parameters_changed",initial_bytes!=files["final.pt"]},{"environment_digest",sha256(numerical_environment())},
@@ -41,7 +43,7 @@ int main(int argc,char** argv){try {
     {"tensor_inventory",tensor_inventory(result.best_model)},{"parameter_count",[&]{int64_t n=0;for(const auto& p:result.best_model->parameters())n+=p.numel();return n;}()}};
   result.final_model->eval();result.best_model->eval();Json final_logits=Json::array(),best_logits=Json::array();
   torch::NoGradGuard no;
-  for(const auto& row:data.train){auto batch=c.encode({row});auto a=result.final_model->forward(batch).flatten(),b=result.best_model->forward(batch).flatten();
+  for(const auto& row:data.training_rows()){auto batch=c.encode({row});auto a=result.final_model->forward(batch).flatten(),b=result.best_model->forward(batch).flatten();
     final_logits.push_back({a[0].item<float>(),a[1].item<float>()});best_logits.push_back({b[0].item<float>(),b[1].item<float>()});}
   summary["final_logits"]=final_logits;summary["best_logits"]=best_logits;files["summary.json"]=canonical(summary);publish_tree(argv[5],files);std::cout<<canonical(summary);return 0;
 }catch(const std::exception& e){std::cerr<<"native operation rejected: "<<e.what()<<"\n";return 1;}}

@@ -4,6 +4,7 @@ from dataclasses import dataclass
 import http.client
 import ssl
 import time
+import multiprocessing
 from urllib.parse import urlsplit
 from .contracts import canonical, digest, loads, record
 from .storage import Journal
@@ -31,6 +32,36 @@ class HTTPProvider:
             raise ValueError('trusted HTTPS origin and explicit remote opt-in required')
         self.origin=u; self.limits=limits
     def __call__(self, request, deadline, cancelled):
+        # A socket timeout alone cannot bound DNS/TLS/header/body phases together.
+        # The host kills and waits for this disposable Linux worker on deadline.
+        if cancelled(): raise TransportError('cancelled')
+        deadline=min(deadline,time.monotonic()+self.limits.seconds)
+        if time.monotonic()>=deadline: raise TransportError('deadline exceeded',True)
+        if len(canonical(request))>self.limits.input_bytes: raise TransportError('input byte cap')
+        ctx=multiprocessing.get_context('fork');receiver,sender=ctx.Pipe(duplex=False)
+        process=ctx.Process(target=_http_worker,args=(self,request,deadline,sender));process.start();sender.close()
+        try:
+            while True:
+                if cancelled(): raise TransportError('cancelled')
+                left=deadline-time.monotonic()
+                if left<=0: raise TransportError('deadline exceeded',True)
+                if receiver.poll(min(left,.05)):
+                    try: result=receiver.recv_bytes(self.limits.response_bytes+1024)
+                    except (EOFError,OSError) as e: raise TransportError('truncated worker response',True) from e
+                    if time.monotonic()>deadline: raise TransportError('deadline exceeded',True)
+                    if result[:1]==b'S':
+                        if len(result)-1>self.limits.response_bytes: raise TransportError('response byte cap')
+                        return result[1:]
+                    failure=loads(result[1:])
+                    raise TransportError(failure['message'],failure['retryable'])
+                if not process.is_alive(): raise TransportError('transport worker failed',True)
+        finally:
+            receiver.close()
+            if process.is_alive(): process.terminate()
+            process.join(.1)
+            if process.is_alive(): process.kill();process.join()
+            process.close()
+    def _exchange(self, request, deadline, cancelled):
         raw=canonical(request)
         if len(raw)>self.limits.input_bytes: raise TransportError('input byte cap')
         conn=http.client.HTTPSConnection(self.origin.hostname,self.origin.port,context=ssl.create_default_context())
@@ -62,6 +93,17 @@ class HTTPProvider:
             raise TransportError('transport failure',True) from e
         finally: conn.close()
 
+def _http_worker(provider,request,deadline,sender):
+    try:
+        raw=provider._exchange(request,deadline,lambda:False)
+        if not isinstance(raw,bytes) or len(raw)>provider.limits.response_bytes: raise TransportError('response byte cap')
+        sender.send_bytes(b'S'+raw)
+    except TransportError as e:
+        sender.send_bytes(b'E'+canonical(dict(message=str(e),retryable=e.retryable)))
+    except Exception:
+        sender.send_bytes(b'E'+canonical(dict(message='transport worker failed',retryable=False)))
+    finally: sender.close()
+
 @dataclass(frozen=True)
 class EducationHooks:
     identity: dict
@@ -88,7 +130,9 @@ class Controller:
         clock=self.journal.replay('run:clock')
         if clock is None:
             clock=dict(started_ns=time.time_ns()); self.journal.commit('clock','run:clock',clock)
-        self.deadline=self.started+max(0,plan['max_elapsed_seconds']-(time.time_ns()-clock['started_ns'])/1e9)
+        elapsed=(time.time_ns()-clock['started_ns'])/1e9
+        if elapsed<0: raise ValueError('journal clock moved backwards')
+        self.deadline=self.started+max(0,plan['max_elapsed_seconds']-elapsed)
     def _check(self):
         if self.cancelled(): raise TransportError('cancelled')
         if time.monotonic()>=self.deadline: raise TransportError('education deadline')

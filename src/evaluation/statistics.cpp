@@ -8,7 +8,7 @@ double sigmoid(double x,double t){need(std::isfinite(x)&&std::isfinite(t)&&t>0);
 std::optional<double> percentile(std::vector<double> x,double p){need(std::isfinite(p)&&p>=0&&p<=1);for(auto v:x)need(std::isfinite(v));if(x.empty())return {};std::sort(x.begin(),x.end());double at=(x.size()-1)*p;size_t lo=at,hi=std::min(lo+1,x.size()-1);return x[lo]+(x[hi]-x[lo])*(at-lo);}
 std::pair<double,double> wilson(size_t e,size_t n,double z){need(n>0&&e<=n&&std::isfinite(z)&&z>0);double p=double(e)/n,z2=z*z,d=1+z2/n,c=(p+z2/(2*n))/d,w=z*std::sqrt(p*(1-p)/n+z2/(4*double(n)*n))/d;return {std::max(0.,c-w),std::min(1.,c+w)};}
 TemperatureFit fit_bernoulli_temperature(const std::vector<double>& x,const std::vector<bool>& y,double lo,double hi,size_t iterations,size_t support,double tolerance){
- need(!x.empty()&&x.size()==y.size()&&x.size()>=support&&support>0&&x.size()<=1000000&&std::isfinite(lo)&&std::isfinite(hi)&&lo>0&&lo<1&&hi>1&&hi<=100&&iterations>0&&iterations<=10000&&std::isfinite(tolerance)&&tolerance>0);
+ need(!x.empty()&&x.size()==y.size()&&x.size()>=support&&support>0&&x.size()<=1000000&&std::isfinite(lo)&&std::isfinite(hi)&&lo>=.001&&lo<1&&hi>1&&hi<=100&&iterations>0&&iterations<=10000&&std::isfinite(tolerance)&&tolerance>0&&tolerance<=1);
  for(auto v:x)need(std::isfinite(v)&&std::abs(v)<=1e6);
  auto loss=[&](double t){double sum=0;for(size_t i=0;i<x.size();++i){double v=x[i]/t;sum+=std::max(v,0.)-v*y[i]+std::log1p(std::exp(-std::abs(v)));}return sum/x.size();};
  const double minimum=lo,maximum=hi,phi=(std::sqrt(5.)-1)/2;

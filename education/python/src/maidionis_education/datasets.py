@@ -120,6 +120,16 @@ def freeze(root, samples, provenance, registry, hooks, component_files, *, datas
     families = _validate(samples, provenance, registry, hooks, seed, dataset_id)
     files = dict(component_files)
     if files.get('descriptor.json') != canonical(registry.descriptor): raise ValueError('descriptor bytes')
+    descriptor=registry.descriptor
+    semantic=descriptor['semantic_spec']
+    if semantic['path'] not in files or digest(files[semantic['path']])!=semantic['sha256']: raise ValueError('semantic component')
+    required=[descriptor[k]['sha256'] for k in ('input_schema','target_schema','output_schema','diagnostics_schema') if descriptor[k] is not None]
+    required += [descriptor[k]['config_digest'] for k in ('input_codec','output_codec','architecture','objective','numerical_compatibility')]
+    required += [r['config_digest'] for r in descriptor['heads']]
+    actual={digest(b) for b in files.values()}
+    if not set(required)<=actual: raise ValueError('missing bound schema/config component')
+    if any(name in files for name in ('family-index.json','provenance.jsonl','split.config.json','manifest.json',*(s+'.jsonl' for s in SPLITS))):
+        raise ValueError('reserved dataset member')
     files['family-index.json'] = canonical(families)
     files['provenance.jsonl'] = b''.join(canonical(p) for p in sorted(provenance,key=lambda p:p['provenance_id']))
     for split in SPLITS:

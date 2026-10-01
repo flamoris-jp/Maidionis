@@ -1,6 +1,9 @@
 from pathlib import Path
 import tempfile
 import unittest
+from unittest.mock import patch
+import time
+import multiprocessing
 from tinybeat import *
 from fixture_data import VERIFY,HOOK,oracle
 from maidionis_education.education import Controller,EducationHooks,TransportLimits,TransportError,HTTPProvider
@@ -23,6 +26,24 @@ class Fake:
         if isinstance(v,Exception): raise v
         return v
 class Education(unittest.TestCase):
+    def test_isolated_transport_deadline_oversize_truncation_and_cleanup(self):
+        provider=HTTPProvider('https://offline.invalid',remote_opt_in=True,limits=TransportLimits(seconds=.1))
+        before={p.pid for p in multiprocessing.active_children()}
+        def block(*args): time.sleep(10);return b'{}'
+        start=time.monotonic()
+        with patch.object(HTTPProvider,'_exchange',block):
+            with self.assertRaises(TransportError):provider({},time.monotonic()+.1,lambda:False)
+        self.assertLess(time.monotonic()-start,1)
+        self.assertEqual(before,{p.pid for p in multiprocessing.active_children()})
+        for response in (b'x'*(129*1024),TransportError('truncated',True),TransportError('redirect',False),TransportError('HTTP status 401',False)):
+            def exchange(*args):
+                if isinstance(response,Exception):raise response
+                return response
+            with patch.object(HTTPProvider,'_exchange',exchange):
+                with self.assertRaises(TransportError):provider({},time.monotonic()+1,lambda:False)
+        with patch.object(HTTPProvider,'_exchange',lambda *args:b'{"ok":true}'):
+            self.assertEqual(provider({},time.monotonic()+1,lambda:False),b'{"ok":true}')
+        with self.assertRaises(TransportError):provider({},time.monotonic()+1,lambda:True)
     def test_blind_review_replay_and_no_agreement_auto_verification(self):
         with tempfile.TemporaryDirectory() as td:
             x=dict(energy=100,beat_position=15);bad=dict(kick=False,snare=False)

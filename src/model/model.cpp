@@ -2,8 +2,12 @@
 #include <torch/version.h>
 #include <cmath>
 #include <sstream>
+#include <atomic>
 
 namespace maidionis {
+namespace {std::atomic<size_t> constructions{0};}
+size_t model_construction_count(){return constructions.load();}
+std::recursive_mutex& numerical_mutex(){static std::recursive_mutex mutex;return mutex;}
 void ModelConfig::validate() const {
   TORCH_CHECK((kind=="dense"||kind=="pooled"||kind=="encoder")&&hidden_width>=1&&hidden_width<=1024&&
     input_width>=1&&input_width<=256&&output_width>=1&&output_width<=256&&dropout_milli>=0&&dropout_milli<1000,"invalid model shape");
@@ -23,6 +27,7 @@ ModelConfig ModelConfig::from_json(const Json& j) {
   TORCH_CHECK(c.json()==j,"unknown model config");c.validate();return c;
 }
 Model::Model(const ModelConfig& c):config_(c) {
+  ++constructions;
   c.validate();
   if(c.kind=="dense")projection_=register_module("projection",torch::nn::Linear(c.input_width,c.hidden_width));
   else {
@@ -80,6 +85,7 @@ std::vector<std::pair<std::string,double>> Model::decay_roles() const {
   std::vector<std::pair<std::string,double>> result;for(const auto& p:named_parameters())result.push_back({p.key(),decay.contains(p.key())?1.0:0.0});return result;
 }
 ModelPtr make_seeded_model(const ModelConfig& c,int64_t seed) {
+  std::lock_guard<std::recursive_mutex> lock(numerical_mutex());
   TORCH_CHECK(seed>=0,"negative seed");torch::set_num_threads(1);torch::globalContext().setDeterministicAlgorithms(true,false);
   torch::manual_seed(seed);return std::make_shared<Model>(c);
 }
@@ -89,7 +95,8 @@ torch::Tensor bernoulli_loss(const torch::Tensor& logits,const torch::Tensor& ta
   return torch::nn::functional::binary_cross_entropy_with_logits(logits,target);
 }
 torch::Tensor categorical_loss(const torch::Tensor& logits,const torch::Tensor& target,const torch::Tensor& eligible) {
-  TORCH_CHECK(logits.dim()==2&&target.dim()==1&&eligible.dim()==1&&target.size(0)==logits.size(0)&&target.sizes()==eligible.sizes()&&
+  TORCH_CHECK(logits.device().is_cpu()&&target.device().is_cpu()&&eligible.device().is_cpu()&&logits.scalar_type()==torch::kFloat32&&
+    logits.dim()==2&&logits.size(0)>=1&&logits.size(0)<=64&&logits.size(1)>=1&&logits.size(1)<=256&&torch::isfinite(logits).all().item<bool>()&&target.dim()==1&&eligible.dim()==1&&target.size(0)==logits.size(0)&&target.sizes()==eligible.sizes()&&
     target.scalar_type()==torch::kInt64&&eligible.scalar_type()==torch::kBool,"categorical target");
   auto selected=eligible.nonzero().squeeze(1);if(!selected.numel())return logits.sum()*0;
   auto y=target.index_select(0,selected);TORCH_CHECK(y.min().item<int64_t>()>=0&&y.max().item<int64_t>()<logits.size(1),"eligible target range");
@@ -122,6 +129,7 @@ void load_model_bytes(ModelPtr m,const std::string& bytes) {
     }} };
   inspect(a,"");TORCH_CHECK(seen.size()==expected.size(),"missing archive tensor");m->load(a);
   for(const auto& p:m->named_parameters())TORCH_CHECK(p.value().scalar_type()==torch::kFloat32&&p.value().device().is_cpu()&&torch::isfinite(p.value()).all().item<bool>(),"archive tensor invalid");
+  if(m->config().kind!="dense")TORCH_CHECK(m->named_parameters()["embedding.weight"][0].eq(0).all().item<bool>(),"archive padding constraint");
   m->enforce_constraints();
 }
 Json tensor_inventory(ModelPtr m) {

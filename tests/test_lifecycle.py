@@ -82,7 +82,7 @@ class Lifecycle(unittest.TestCase):
     @classmethod
     def tearDownClass(cls): cls.tmp.cleanup()
     @classmethod
-    def infer(cls,path,digest_value,*,persistent=2**20,peak=16*2**20,fault='none'):
+    def infer(cls,path,digest_value,*,persistent=2**20,peak=AS_CAP,fault='none'):
         return run('infer',cls.composition,path,digest_value,64*2**20,AS_CAP,persistent,peak,fault)
     @classmethod
     def evaluate(cls,predictions):
@@ -118,9 +118,9 @@ class Lifecycle(unittest.TestCase):
             correct=sum(p['target'][name]==p['result']['payload'][name] for p in self.predictions)
             self.assertEqual(metric['numerator'],correct);self.assertEqual(metric['support'],len(self.rows))
     def test_loading_faults_capacity_expiry_and_pending_serving_rejected(self):
-        for persistent,peak,fault in [(1,16*2**20,'none'),(2**20,1,'none'),(2**20,16*2**20,'expired'),
-            (2**20,16*2**20,'after_construct'),(2**20,16*2**20,'after_load'),(2**20,16*2**20,'before_transfer'),
-            (2**20,16*2**20,'expire_after_load')]:
+        for persistent,peak,fault in [(1,AS_CAP,'none'),(2**20,1,'none'),(2**20,AS_CAP,'expired'),
+            (2**20,AS_CAP,'after_construct'),(2**20,AS_CAP,'after_load'),(2**20,AS_CAP,'before_transfer'),
+            (2**20,AS_CAP,'expire_after_load')]:
             run('infer',self.composition,self.candidate,self.candidate_digest,64*2**20,AS_CAP,persistent,peak,fault,success=False)
         run('validate',self.composition,self.candidate,self.candidate_digest,'serving',success=False)
     def test_bundle_mutation_shape_extra_symlink_and_evidence(self):
@@ -149,6 +149,32 @@ class Lifecycle(unittest.TestCase):
         bad=self.root/'bad-pointer';shutil.copytree(source,bad)
         (bad/'latest.json').write_bytes(canonical(dict(checkpoint='../outside',manifest_digest='0'*64)))
         run('train',self.dataset,self.data_digest,bad,self.root/'bad-pointer-out',0,1,success=False)
+    def test_rehashed_resume_state_cannot_change_schedule_or_parameter_roles(self):
+        import shutil
+        source=self.root/'resumed-checkpoints'
+        for i,mutate in enumerate((lambda s:s['scheduler'].update(phase=0),lambda s:s['parameter_groups'][0].update(decay=.5),
+                                  lambda s:s.update(epoch_order_version='other'),lambda s:s.update(patience_counter=999))):
+            root=self.root/('state-substitution-'+str(i));shutil.copytree(source,root)
+            pointer=loads((root/'latest.json').read_bytes());epoch=root/pointer['checkpoint']
+            state=loads((epoch/'state.json').read_bytes(),4*2**20);mutate(state);(epoch/'state.json').write_bytes(canonical(state))
+            manifest=loads((epoch/'manifest.json').read_bytes(),4*2**20)
+            files={p.relative_to(epoch).as_posix():p.read_bytes() for p in epoch.rglob('*') if p.is_file() and p.name!='manifest.json'}
+            manifest['files']=inventory(files);manifest['state_digest']=digest(files['state.json']);raw=canonical(manifest);(epoch/'manifest.json').write_bytes(raw)
+            pointer['manifest_digest']=digest(raw);(root/'latest.json').write_bytes(canonical(pointer))
+            run('train',self.dataset,self.data_digest,root,self.root/('state-out-'+str(i)),0,1,success=False)
+    def test_actual_training_write_fsync_rename_pointer_failure_keeps_previous_checkpoint(self):
+        import shutil
+        epoch=self.root/'full-checkpoints'/'epoch-1';raw=(epoch/'manifest.json').read_bytes()
+        pointer=canonical(dict(checkpoint='epoch-1',manifest_digest=digest(raw)))
+        for i,fault in enumerate(('write','fsync','directory_fsync','rename','pointer')):
+            root=self.root/('training-fault-'+str(i));root.mkdir();shutil.copytree(epoch,root/'epoch-1');(root/'latest.json').write_bytes(pointer)
+            run('train',self.dataset,self.data_digest,root,self.root/('fault-out-'+str(i)),1,1,fault,success=False)
+            self.assertEqual((root/'latest.json').read_bytes(),pointer);self.assertEqual((root/'epoch-1'/'manifest.json').read_bytes(),raw)
+            # Explicit recovery selects the last published pointer into a new run
+            # root. An orphan is retained rather than silently overwritten.
+            recovered=self.root/('recovery-'+str(i));recovered.mkdir();shutil.copytree(root/'epoch-1',recovered/'epoch-1');(recovered/'latest.json').write_bytes(pointer)
+            result=run('train',self.dataset,self.data_digest,recovered,self.root/('recovery-out-'+str(i)),1,1)
+            self.assertGreater(result['state']['global_step'],loads((epoch/'state.json').read_bytes())['global_step'])
     def test_preregistration_and_finalization_cannot_substitute_components(self):
         p=plan();p['evaluation_policy_digest']=POLICY
         changed=dict(self.registration,policy_digest='0'*64)

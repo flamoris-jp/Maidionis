@@ -2,6 +2,7 @@
 #include "maidionis/contracts.h"
 #include <torch/torch.h>
 #include <functional>
+#include <mutex>
 
 namespace maidionis {
 struct ModelConfig {
@@ -30,6 +31,8 @@ class Model : public torch::nn::Module {
 };
 using ModelPtr=std::shared_ptr<Model>;
 ModelPtr make_seeded_model(const ModelConfig&,int64_t seed);
+std::recursive_mutex& numerical_mutex();
+size_t model_construction_count();
 torch::Tensor bernoulli_loss(const torch::Tensor&,const torch::Tensor&);
 torch::Tensor categorical_loss(const torch::Tensor&,const torch::Tensor&,const torch::Tensor& eligible);
 void validate_text_batch(const Batch&,int64_t vocabulary);
