@@ -61,7 +61,7 @@ claiming Core implementation. No new autonomous education/Drum implementation.
 | A09 | injected write/fsync/rename/pointer/crash failures leave prior good checkpoint usable; no partial publication; best/final objects are explicit |
 | A10 | teacher proposals remain unverified; blind review excludes original label/rationale; same-model agreement does not grant audit status; corrections retain lineage |
 | A11 | bounded transport timeout/status/redirect/truncation/oversize/cancellation/replay tests using fakes; committed replay makes zero network requests |
-| A12 | freeze deterministic bytes on interrupted resume, no overwrite, IDs/provenance/family integrity; tokenizer sees only train, teacher no held-out payload; legacy assignments preserved |
+| A12 | freeze deterministic bytes on interrupted resume, no overwrite; rename family IDs or add equivalent paraphrases/corrections without moving splits; reject forged/missing anchors, inconsistent fingerprints, changed seed and cross-split ancestry; tokenizer sees only train, teacher no held-out payload; legacy assignments preserved |
 | A13 | trusted bundle digest and every file/key/shape/codec/calibration binding validated; reject untrusted provenance, symlink/race/extra file and unsupported profile |
 | A14 | finite calibration/T=1/support/gate tie fixtures; policy parameterized; failed gate disables actionable output and raw values never claim calibration |
 | A15 | hand-calculable metrics include zero support/empty acceptance, all-unanswerable and imbalance; missing/duplicate/error predictions invalidate complete release accounting |
