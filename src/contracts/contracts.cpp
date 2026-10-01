@@ -7,6 +7,7 @@
 #include <regex>
 #include <cmath>
 #include <charconv>
+#include <utility>
 
 namespace maidionis {
 std::string compiled_build_digest(){return MAIDIONIS_BUILD_DIGEST;}
@@ -17,6 +18,19 @@ size_t unicode_length(const std::string& s) { size_t n=0;for(unsigned char c:s)i
 bool strict_equal(const Json& a,const Json& b) {
   if(a.is_boolean()!=b.is_boolean() || a.is_number()!=b.is_number() || a.is_number_float()!=b.is_number_float())return false;
   return a==b;
+}
+bool numeric_less(const Json& a,const Json& b) {
+  // Integer bounds must not lose precision through double conversion.
+  if(a.is_number_integer()&&b.is_number_integer()) {
+    if(a.is_number_unsigned()) {
+      if(b.is_number_unsigned())return a.get<uint64_t>()<b.get<uint64_t>();
+      return std::cmp_less(a.get<uint64_t>(),b.get<int64_t>());
+    }
+    if(b.is_number_unsigned())return std::cmp_less(a.get<int64_t>(),b.get<uint64_t>());
+    return a.get<int64_t>()<b.get<int64_t>();
+  }
+  // Linux x86_64 extended precision also keeps integer/float bounds exact.
+  return a.get<long double>()<b.get<long double>();
 }
 }
 Json parse_json(const std::string& raw,size_t maximum) {
@@ -88,8 +102,8 @@ void validate_schema(const Json& v,const Json& s) {
     if(s.contains("pattern"))require(std::regex_search(str,std::regex(s["pattern"].get<std::string>())),"string pattern");
   } else if(v.is_number()) {
     const double x=v.get<double>();require(std::isfinite(x),"nonfinite number");
-    if(s.contains("minimum"))require(x>=s["minimum"].get<double>(),"number minimum");
-    if(s.contains("maximum"))require(x<=s["maximum"].get<double>(),"number maximum");
+    if(s.contains("minimum"))require(!numeric_less(v,s["minimum"]),"number minimum");
+    if(s.contains("maximum"))require(!numeric_less(s["maximum"],v),"number maximum");
   }
 }
 Json schema(const std::string& name) {

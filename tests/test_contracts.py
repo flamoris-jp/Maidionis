@@ -39,6 +39,12 @@ class Contracts(unittest.TestCase):
                   (b'{"schema_version":"maidionis.request.v1","schema_version":"x"}','request',False),
                   (canonical(dict(request,extra=1)),'request',False),(canonical(dict(request,request_id=4)),'request',False),
                   (b'{"x":1e999}','request',False),(b'{"x":18446744073709551616}','request',False)]
+        report=dict(schema_version='maidionis.evaluation-report.v1',experiment_id='test',run_id='test',
+            descriptor_digest=BUILD,evaluated_component_digest=BUILD,evaluation_registration_digest=BUILD,
+            dataset_digest=BUILD,artifact_digest=BUILD,split='train',selection_scope='train_diagnostic',status='complete',
+            expected_samples=0,observed_samples=0,errors=[],metrics=[],limitations=[])
+        variants.extend((canonical(dict(report,expected_samples=n)),'evaluation-report',accepted)
+            for n,accepted in ((2**63-1,True),(2**63,False),(2**63+1023,False)))
         with tempfile.TemporaryDirectory() as td:
             for raw,name,expected in variants:
                 p=Path(td)/'case.json';p.write_bytes(raw)
