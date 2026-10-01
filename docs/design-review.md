@@ -59,6 +59,25 @@ generality proof. This amendment corrects their contracts without starting code.
   integration or live host checks were run. Existing recorded research test
   counts are source evidence only and are not reported as passing here.
 
+## Amendment verification
+
+- Rechecked the current PR and relevant research build/model/training, family
+  split/freezer tests, and Runtime provider/residency contracts before amending
+  the design. The Runtime revision linked by the design remains current for
+  this inspection; it is not a live host claim.
+- Checked all 12 proposal Markdown files, 26 relative links/anchors, 23 unique
+  ordered acceptance IDs and the unchanged 135-path inventory; no stale descriptor
+  policy fields, mutable-ID split formula or implicit device move remains.
+- Compared all 11 published design-document blob hashes against local reviewed
+  bytes. All other original tracked blobs remain unchanged; no path was deleted.
+- The five requested corrections and staged education/evaluation identities
+  were reviewed together. The plan fixes policy first; final registration binds
+  actual trained components before test access, avoiding future-weight references
+  in an initial EducationPlan.
+- A21/A22/A23 are implementation obligations, not tests executed in this PR.
+  No model build/training, native acceptance, teacher call or Runtime deployment
+  occurred during this amendment.
+
 No unresolved blocker was found within the design-only delivery scope after
 these corrections. Human review can still amend the proposal. M1 must turn the
 field tables into shared schemas and fixtures before persisted implementation;
