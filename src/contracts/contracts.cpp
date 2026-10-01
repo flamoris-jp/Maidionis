@@ -1,4 +1,5 @@
 #include "maidionis/contracts.h"
+#include "embedded_schemas.h"
 #include <openssl/sha.h>
 #include <fstream>
 #include <iomanip>
@@ -63,7 +64,11 @@ void validate_schema(const Json& v,const Json& s) {
   static const std::set<std::string> allowed={"$schema","$id","type","properties","required","additionalProperties","items",
    "minItems","maxItems","uniqueItems","minLength","maxLength","pattern","minimum","maximum","enum","const","anyOf"};
   for(auto it=s.begin();it!=s.end();++it)require(allowed.contains(it.key()),"unsupported schema keyword");
-  if(s.contains("anyOf")){for(const auto& a:s["anyOf"]){try{validate_schema(v,a);return;}catch(const std::invalid_argument&){}}throw std::invalid_argument("schema alternatives mismatch");}
+  if(s.contains("anyOf")){
+    bool matched=false;
+    for(const auto& a:s["anyOf"]){try{validate_schema(v,a);matched=true;break;}catch(const std::invalid_argument&){}}
+    require(matched,"schema alternatives mismatch");
+  }
   if(s.contains("type")) {
     auto t=s["type"].get<std::string>();bool match=(t=="object"&&v.is_object())||(t=="array"&&v.is_array())||
       (t=="string"&&v.is_string())||(t=="integer"&&v.is_number_integer())||(t=="number"&&v.is_number())||
@@ -87,7 +92,10 @@ void validate_schema(const Json& v,const Json& s) {
     if(s.contains("maximum"))require(x<=s["maximum"].get<double>(),"number maximum");
   }
 }
-Json schema(const std::string& name) { safe_path(name);return parse_json(read_file(std::filesystem::path(MAIDIONIS_SCHEMA_DIR)/(name+".schema.json"),4*1024*1024),4*1024*1024); }
+Json schema(const std::string& name) {
+  auto it=embedded_schemas.find(name);require(it!=embedded_schemas.end(),"unknown compiled schema");
+  return parse_json(it->second,4*1024*1024);
+}
 void validate_record(const std::string& name,const Json& v){validate_schema(v,schema(name));}
 void safe_path(const std::string& path) {
   require(!path.empty()&&path.size()<=1024&&path.front()!='/'&&path.find('\\')==std::string::npos&&path.find('\0')==std::string::npos,"invalid relative path");

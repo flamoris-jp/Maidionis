@@ -4,10 +4,26 @@ from pathlib import Path
 import subprocess
 import tempfile
 import unittest
+from unittest.mock import patch,MagicMock
 from maidionis_education.contracts import canonical,digest,loads,record,RegistryBuilder,schema,validate
 from tinybeat import registry,DESCRIPTOR,BUILD,SCHEMAS,CONFIGS,ref,component,IDENTITY
 
 class Contracts(unittest.TestCase):
+    def test_anyof_preserves_sibling_constraints(self):
+        bounded=dict(anyOf=[dict(type='integer')],maximum=5)
+        validate(5,bounded)
+        with self.assertRaises(ValueError):validate(999,bounded)
+        closed=dict(anyOf=[dict(type='object')],required=['x'],properties=dict(x=dict(type='integer')),additionalProperties=False)
+        validate(dict(x=1),closed)
+        for value in ({},{'x':1,'extra':2}):
+            with self.assertRaises(ValueError):validate(value,closed)
+    def test_packaged_schema_substitution_rejected(self):
+        self.assertEqual(schema('request')['$id'],'maidionis.request.v1')
+        resource=MagicMock();resource.joinpath.return_value.read_bytes.return_value=b'{}\n'
+        with patch('maidionis_education.contracts.files',return_value=resource):
+            with self.assertRaises(ValueError):schema('request')
+        for name in ('../request','not-compiled'):
+            with self.assertRaises(ValueError):schema(name)
     def test_strict_parser(self):
         for raw in [b'{"x":1,"x":2}',b'"\xff"',b'"\\ud800"',b'NaN',b'1e999',b'['*33+b'0'+b']'*33,
                     b'{"'+b'a'*257+b'":0}',b'18446744073709551616']:

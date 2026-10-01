@@ -5,6 +5,7 @@ import json
 import math
 import re
 from importlib.resources import files
+from ._schema_pins import SCHEMA_DIGESTS
 
 def digest(raw: bytes) -> str:
     return hashlib.sha256(raw).hexdigest()
@@ -56,7 +57,11 @@ def loads(raw: bytes | str, max_bytes=65536):
     return value
 
 def schema(name):
-    return loads(files('maidionis_contracts').joinpath(name+'.schema.json').read_bytes(),4*1024*1024)
+    expected=SCHEMA_DIGESTS.get(name)
+    if expected is None: raise ValueError('unknown pinned schema')
+    raw=files('maidionis_contracts').joinpath(name+'.schema.json').read_bytes()
+    if digest(raw)!=expected: raise ValueError('persisted schema digest mismatch')
+    return loads(raw,4*1024*1024)
 
 def validate(v,s):
     allowed={'$schema','$id','type','properties','required','additionalProperties','items','minItems','maxItems',
@@ -64,9 +69,9 @@ def validate(v,s):
     if set(s)-allowed: raise ValueError('unsupported schema keyword')
     if 'anyOf' in s:
         for alternative in s['anyOf']:
-            try: validate(v,alternative); return v
+            try: validate(v,alternative); break
             except ValueError: pass
-        raise ValueError('schema alternatives mismatch')
+        else: raise ValueError('schema alternatives mismatch')
     types={'object':isinstance(v,dict),'array':isinstance(v,list),'string':isinstance(v,str),
            'integer':type(v) is int,'number':type(v) in (int,float),'boolean':type(v) is bool,'null':v is None}
     if 'type' in s and not types.get(s['type'],False): raise ValueError('schema type mismatch')
