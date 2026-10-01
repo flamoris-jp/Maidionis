@@ -21,11 +21,17 @@ std::string unique(){return ".stage-"+std::to_string(::getpid())+"-"+std::to_str
 WriterLock::WriterLock(const std::filesystem::path& p){std::filesystem::create_directories(p.parent_path());no_links(p);fd_=::open(p.c_str(),O_CREAT|O_RDWR|O_NOFOLLOW,0600);if(fd_<0||::flock(fd_,LOCK_EX|LOCK_NB)!=0){if(fd_>=0)::close(fd_);fd_=-1;throw std::runtime_error("writer lock unavailable");}}
 WriterLock::~WriterLock(){if(fd_>=0)::close(fd_);}
 std::string immutable_read(const std::filesystem::path& p,size_t cap) {
-  no_links(p);int fd=::open(p.c_str(),O_RDONLY|O_NOFOLLOW);fail(fd<0,"file open failure");
+  auto path=std::filesystem::absolute(p);int parent=::open("/",O_RDONLY|O_DIRECTORY);fail(parent<0,"root open failure");
+  int fd=-1;
+  try {for(const auto& part:path.parent_path().relative_path()){
+    fail(part==".."||part==".","noncanonical source path");int next=::openat(parent,part.c_str(),O_RDONLY|O_DIRECTORY|O_NOFOLLOW);
+    fail(next<0,"source parent open failure");::close(parent);parent=next;}
+    fd=::openat(parent,path.filename().c_str(),O_RDONLY|O_NOFOLLOW|O_NONBLOCK);fail(fd<0,"file open failure");::close(parent);
+  }catch(...){::close(parent);if(fd>=0)::close(fd);throw;}
   try {struct stat before,after;fail(::fstat(fd,&before)!=0||!S_ISREG(before.st_mode)||before.st_size<0||uint64_t(before.st_size)>cap,"file bound");
     std::string raw;raw.reserve(before.st_size);char buffer[8192];ssize_t n;
     while((n=::read(fd,buffer,sizeof buffer))>0){fail(size_t(n)>cap-raw.size(),"file bound");raw.append(buffer,n);}fail(n<0,"file read failure");
-    fail(::fstat(fd,&after)!=0||before.st_size!=after.st_size||before.st_mtim.tv_sec!=after.st_mtim.tv_sec||before.st_mtim.tv_nsec!=after.st_mtim.tv_nsec||raw.size()!=size_t(before.st_size),"mutable source");
+    fail(::fstat(fd,&after)!=0||before.st_size!=after.st_size||before.st_mtim.tv_sec!=after.st_mtim.tv_sec||before.st_mtim.tv_nsec!=after.st_mtim.tv_nsec||before.st_ctim.tv_sec!=after.st_ctim.tv_sec||before.st_ctim.tv_nsec!=after.st_ctim.tv_nsec||raw.size()!=size_t(before.st_size),"mutable source");
     ::close(fd);return raw;
   }catch(...){::close(fd);throw;}
 }
@@ -55,7 +61,7 @@ Files verified_snapshot(const std::filesystem::path& root,const Json& entries,si
   for(const auto& entry:entries){validate_schema(entry,Json{{"type","object"},{"required",{"path","sha256","bytes"}},
       {"additionalProperties",false},{"properties",{{"path",{{"type","string"}}},{"sha256",{{"type","string"},{"pattern","^[a-f0-9]{64}$"}}},{"bytes",{{"type","integer"},{"minimum",0}}}}}});
     const auto path=entry["path"].get<std::string>();safe_path(path);const auto size=entry["bytes"].get<uint64_t>();
-    fail(size>member_cap||size>total_cap-total||files.contains(path),"inventory bound or duplicate");
+    fail(path=="manifest.json"||size>member_cap||size>total_cap-total||files.contains(path),"inventory bound or duplicate");
     auto raw=immutable_read(root/path,size);fail(raw.size()!=size||sha256(raw)!=entry["sha256"].get<std::string>(),"inventory digest");total+=size;files.emplace(path,std::move(raw));
   }
   std::set<std::string> seen;

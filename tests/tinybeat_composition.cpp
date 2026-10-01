@@ -29,5 +29,14 @@ NumericalComposition tinybeat_composition(const std::filesystem::path& root) {
   };
   c.objective=[](const torch::Tensor& logits,const Batch& b){return bernoulli_loss(logits,b.targets);};
   c.decode=[](const torch::Tensor& logits){if(logits.numel()!=2)throw std::invalid_argument("decode shape");auto p=torch::sigmoid(logits.flatten());return Json{{"kick",p[0].item<float>()>=.5f},{"snare",p[1].item<float>()>=.5f}};};
+  c.verify_dataset_row=[](const Json& row,const Json& family,const Json& manifest,const Json& config){
+    const auto& input=row["input"];Json root={{"scenario",{{"energy",input["energy"]},{"position",input["beat_position"]}}},{"template","grid-v1"}};
+    auto ref=[](const std::string& name,const Json& value){return Json{{"id","test.tiny-beat."+name},{"version","1"},{"config_digest",sha256(canonical(value))}};};
+    auto hook=ref("dataset-hooks",Json{{"implementation","test-v1"}}),verify=ref("oracle",Json{{"oracle","kick>=50,snare>=8"}});
+    auto grouping=ref("group",Json{{"projection","energy-position-v1"}}),dedup=ref("dedup",Json{{"projection","exact-input"}});
+    if(family["roots"]!=Json::array({Json{{"digest",sha256(canonical(root))},{"content",root}}})||config["hook"]!=hook||config["grouping"]!=grouping||
+       manifest["dedup_profile"]!=dedup||manifest["verification_profile"]!=verify||row["verification_profile"]!=verify||row["supersedes"]!=nullptr||
+       row["target"]!=Json{{"kick",input["energy"].get<int>()>=50},{"snare",input["beat_position"].get<int>()>=8}})throw std::invalid_argument("native Tiny Beat frozen eligibility");
+  };
   c.validate();return c;
 }

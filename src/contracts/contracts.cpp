@@ -5,6 +5,7 @@
 #include <set>
 #include <regex>
 #include <cmath>
+#include <charconv>
 
 namespace maidionis {
 namespace {
@@ -12,12 +13,23 @@ void require(bool ok,const char* message) { if(!ok) throw std::invalid_argument(
 std::string key(const Json& r) { return r.at("id").get<std::string>()+"\n"+r.at("version").get<std::string>(); }
 size_t unicode_length(const std::string& s) { size_t n=0;for(unsigned char c:s)if((c&0xc0)!=0x80)++n;return n; }
 bool strict_equal(const Json& a,const Json& b) {
-  if(a.is_boolean()!=b.is_boolean() || a.is_number()!=b.is_number())return false;
+  if(a.is_boolean()!=b.is_boolean() || a.is_number()!=b.is_number() || a.is_number_float()!=b.is_number_float())return false;
   return a==b;
 }
 }
 Json parse_json(const std::string& raw,size_t maximum) {
   require(raw.size()<=maximum,"JSON byte limit");
+  // nlohmann otherwise coerces oversized integer literals to floating point.
+  bool quoted=false,escaped=false;
+  for(size_t i=0;i<raw.size();++i){char c=raw[i];
+    if(quoted){if(escaped)escaped=false;else if(c=='\\')escaped=true;else if(c=='"')quoted=false;continue;}
+    if(c=='"'){quoted=true;continue;}
+    if(c=='-'||(c>='0'&&c<='9')){size_t start=i;while(i+1<raw.size()&&(std::isdigit(static_cast<unsigned char>(raw[i+1]))||raw[i+1]=='.'||raw[i+1]=='e'||raw[i+1]=='E'||raw[i+1]=='+'||raw[i+1]=='-'))++i;
+      auto literal=raw.substr(start,i-start+1);if(literal.find_first_of(".eE")==std::string::npos){std::errc error;
+        if(literal[0]=='-'){int64_t value;error=std::from_chars(literal.data(),literal.data()+literal.size(),value).ec;}
+        else {uint64_t value;error=std::from_chars(literal.data(),literal.data()+literal.size(),value).ec;}
+        require(error==std::errc{},"integer overflow");}}
+  }
   size_t count=0; std::vector<std::set<std::string>> keys;
   auto cb=[&](int depth,Json::parse_event_t event,Json& value) {
     require(depth<=32,"JSON depth limit");

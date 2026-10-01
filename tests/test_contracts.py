@@ -20,7 +20,7 @@ class Contracts(unittest.TestCase):
         variants=[(canonical(DESCRIPTOR),'specialization',True),(canonical(request),'request',True),
                   (b'{"schema_version":"maidionis.request.v1","schema_version":"x"}','request',False),
                   (canonical(dict(request,extra=1)),'request',False),(canonical(dict(request,request_id=4)),'request',False),
-                  (b'{"x":1e999}','request',False)]
+                  (b'{"x":1e999}','request',False),(b'{"x":18446744073709551616}','request',False)]
         with tempfile.TemporaryDirectory() as td:
             for raw,name,expected in variants:
                 p=Path(td)/'case.json';p.write_bytes(raw)

@@ -40,6 +40,8 @@ struct NumericalComposition {
   std::function<Batch(const std::vector<Json>&)> encode;
   std::function<torch::Tensor(const torch::Tensor&,const Batch&)> objective;
   std::function<Json(const torch::Tensor&)> decode;
+  // The specialization revalidates semantic roots/eligibility without a teacher.
+  std::function<void(const Json&,const Json&,const Json&,const Json&)> verify_dataset_row;
   void validate() const;
 };
 std::string numerical_environment();

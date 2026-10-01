@@ -1,0 +1,164 @@
+{
+  "$id": "maidionis.family-index.v1",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "items": {
+    "additionalProperties": false,
+    "properties": {
+      "aliases": {
+        "items": {
+          "maxLength": 128,
+          "minLength": 1,
+          "pattern": "^[A-Za-z0-9._:-]{1,128}$",
+          "type": "string"
+        },
+        "maxItems": 1000000,
+        "minItems": 1,
+        "type": "array",
+        "uniqueItems": true
+      },
+      "anchor": {
+        "additionalProperties": false,
+        "properties": {
+          "grouping_profile": {
+            "additionalProperties": false,
+            "properties": {
+              "config_digest": {
+                "maxLength": 64,
+                "minLength": 1,
+                "pattern": "^[a-f0-9]{64}$",
+                "type": "string"
+              },
+              "id": {
+                "maxLength": 128,
+                "minLength": 1,
+                "pattern": "^[A-Za-z0-9._:-]{1,128}$",
+                "type": "string"
+              },
+              "version": {
+                "maxLength": 128,
+                "minLength": 1,
+                "pattern": "^[A-Za-z0-9._:-]{1,128}$",
+                "type": "string"
+              }
+            },
+            "required": [
+              "id",
+              "version",
+              "config_digest"
+            ],
+            "type": "object"
+          },
+          "root_digests": {
+            "items": {
+              "maxLength": 64,
+              "minLength": 1,
+              "pattern": "^[a-f0-9]{64}$",
+              "type": "string"
+            },
+            "maxItems": 1000,
+            "minItems": 1,
+            "type": "array",
+            "uniqueItems": true
+          },
+          "schema_version": {
+            "const": "maidionis.family-anchor.v1"
+          },
+          "task_id": {
+            "maxLength": 128,
+            "minLength": 1,
+            "pattern": "^[A-Za-z0-9._:-]{1,128}$",
+            "type": "string"
+          },
+          "task_version": {
+            "maxLength": 128,
+            "minLength": 1,
+            "pattern": "^[A-Za-z0-9._:-]{1,128}$",
+            "type": "string"
+          }
+        },
+        "required": [
+          "schema_version",
+          "task_id",
+          "task_version",
+          "grouping_profile",
+          "root_digests"
+        ],
+        "type": "object"
+      },
+      "fingerprint": {
+        "maxLength": 64,
+        "minLength": 1,
+        "pattern": "^[a-f0-9]{64}$",
+        "type": "string"
+      },
+      "members": {
+        "items": {
+          "maxLength": 128,
+          "minLength": 1,
+          "pattern": "^[A-Za-z0-9._:-]{1,128}$",
+          "type": "string"
+        },
+        "maxItems": 1000000,
+        "minItems": 1,
+        "type": "array",
+        "uniqueItems": true
+      },
+      "roots": {
+        "items": {
+          "additionalProperties": false,
+          "properties": {
+            "content": {
+              "anyOf": [
+                {
+                  "type": "object"
+                },
+                {
+                  "type": "array"
+                },
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "number"
+                },
+                {
+                  "type": "boolean"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "digest": {
+              "maxLength": 64,
+              "minLength": 1,
+              "pattern": "^[a-f0-9]{64}$",
+              "type": "string"
+            }
+          },
+          "required": [
+            "digest",
+            "content"
+          ],
+          "type": "object"
+        },
+        "maxItems": 1000,
+        "minItems": 1,
+        "type": "array",
+        "uniqueItems": false
+      }
+    },
+    "required": [
+      "fingerprint",
+      "anchor",
+      "roots",
+      "aliases",
+      "members"
+    ],
+    "type": "object"
+  },
+  "maxItems": 1000000,
+  "minItems": 0,
+  "type": "array",
+  "uniqueItems": false
+}

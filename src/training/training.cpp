@@ -25,15 +25,43 @@ Json TrainingConfig::json() const{return {{"seed",seed},{"epochs",epochs},{"batc
 void TrainingConfig::validate() const {require(seed>=0&&epochs>0&&epochs<=10000&&batch_size>0&&batch_size<=64&&patience>0&&patience<=10000&&
  std::isfinite(learning_rate)&&learning_rate>0&&learning_rate<=1&&std::isfinite(weight_decay)&&weight_decay>=0&&weight_decay<=1&&
  std::isfinite(max_grad_norm)&&max_grad_norm>0&&max_grad_norm<=1000&&(selection_scope=="dev"||selection_scope=="train_diagnostic"),"training configuration");}
-DatasetHandle training_data(const std::filesystem::path& root,const std::string& trusted_digest,const Registry& r) {
+DatasetHandle training_data(const std::filesystem::path& root,const std::string& trusted_digest,const NumericalComposition& composition) {
+  const auto& r=composition.registry;require(bool(composition.verify_dataset_row),"explicit native dataset verifier required");
   auto raw=immutable_read(root/"manifest.json",4*1024*1024);require(sha256(raw)==trusted_digest,"dataset digest");auto manifest=parse_json(raw,4*1024*1024);validate_record("dataset",manifest);
+  std::map<std::string,Json> entries;size_t total=0;
+  for(const auto& e:manifest["files"]){auto p=e["path"].get<std::string>();safe_path(p);auto bytes=e["bytes"].get<size_t>();
+    require(p!="manifest.json"&&entries.emplace(p,e).second&&bytes<=1024*1024*1024-total,"dataset inventory coverage/bound");total+=bytes;}
+  std::set<std::string> disk;
+  for(const auto& e:std::filesystem::recursive_directory_iterator(root)){require(!e.is_symlink(),"dataset symlink");if(e.is_directory())continue;require(e.is_regular_file(),"dataset nonregular member");auto p=std::filesystem::relative(e.path(),root).generic_string();if(p!="manifest.json")disk.insert(p);}
+  require(disk.size()==entries.size(),"extra/missing dataset member");for(const auto& p:disk)require(entries.contains(p),"extra dataset member");
+  auto metadata=[&](const std::string& p){require(entries.contains(p),"dataset metadata inventory");auto b=immutable_read(root/p,4*1024*1024);require(b.size()==entries.at(p)["bytes"].get<size_t>()&&sha256(b)==entries.at(p)["sha256"].get<std::string>(),"dataset metadata digest");return parse_json(b,4*1024*1024);};
   safe_path(manifest["descriptor"]["path"].get<std::string>());auto descriptor=immutable_read(root/manifest["descriptor"]["path"].get<std::string>(),4*1024*1024);require(sha256(descriptor)==manifest["descriptor"]["sha256"].get<std::string>()&&parse_json(descriptor,4*1024*1024)==r.descriptor(),"dataset descriptor");
+  require(entries.contains("descriptor.json")&&entries["descriptor.json"]["sha256"]==manifest["descriptor"]["sha256"],"descriptor inventory binding");
+  auto split_config=metadata("split.config.json"),index=metadata("family-index.json");validate_record("family-index",index);
+  require(entries.at("family-index.json")["sha256"]==manifest["split_profile"]["family_registry_digest"]&&entries.at("split.config.json")["sha256"]==manifest["split_profile"]["config_digest"],"family/split config binding");
+  require(split_config["algorithm"]=="maidionis-split-v1"&&split_config["seed"]==manifest["split_profile"]["seed"]&&split_config["grouping"]["version"]==manifest["split_profile"]["grouping_version"],"supported split algorithm");
+  auto assigned=[&](const std::string& fp){auto hash=sha256("maidionis-split-v1\n"+std::to_string(manifest["split_profile"]["seed"].get<int64_t>())+"\n"+fp);auto bucket=std::stoull(hash.substr(0,16),nullptr,16)%10000;
+    return bucket<6000?"train":bucket<7500?"dev":bucket<8500?"calibration_fit":bucket<9000?"calibration_select":"test";};
+  std::map<std::string,Json> families;std::set<std::string> aliases,members,roots;std::map<std::string,size_t> family_counts,record_counts;
+  for(const auto& f:index){auto fp=f["fingerprint"].get<std::string>();require(families.emplace(fp,f).second&&sha256(canonical(f["anchor"]))==fp,"family anchor fingerprint");
+    require(f["anchor"]["task_id"]==r.descriptor()["task_id"]&&f["anchor"]["task_version"]==r.descriptor()["task_version"]&&f["anchor"]["grouping_profile"]==split_config["grouping"],"family anchor profile");
+    std::vector<std::string> root_digests;for(const auto& root:f["roots"]){auto h=root["digest"].get<std::string>();require(h==sha256(canonical(root["content"]))&&roots.insert(h).second,"forged/shared family root");root_digests.push_back(h);}
+    require(std::is_sorted(root_digests.begin(),root_digests.end())&&Json(root_digests)==f["anchor"]["root_digests"],"root ordering/binding");
+    for(const auto& a:f["aliases"])require(aliases.insert(a.get<std::string>()).second,"family alias collision");for(const auto& id:f["members"])require(members.insert(id.get<std::string>()).second,"family member collision");
+    auto s=assigned(fp);++family_counts[s];record_counts[s]+=f["members"].size();}
+  for(const auto& s:{"train","dev","calibration_fit","calibration_select","test"})require(manifest["counts"][s]["families"]==family_counts[s]&&manifest["counts"][s]["records"]==record_counts[s],"family split counts");
   DatasetHandle data;data.manifest_digest=trusted_digest;
+  std::set<std::string> all_ids;
   for(const auto& split:{"train","dev"}) {
     auto name=std::string(split)+".jsonl";Json entry;size_t matches=0;for(const auto& e:manifest["files"])if(e["path"]==name){entry=e;++matches;}
     require(matches==1,"split inventory");auto bytes=immutable_read(root/name,64*1024*1024);require(bytes.size()==entry["bytes"].get<size_t>()&&sha256(bytes)==entry["sha256"].get<std::string>(),"split digest");
     if(!bytes.empty())require(bytes.back()=='\n',"JSONL missing LF");std::istringstream lines(bytes);std::string line;auto& rows=std::string(split)=="train"?data.train:data.dev;std::set<std::string> ids;
-    while(std::getline(lines,line)){require(!line.empty(),"blank JSONL");auto row=parse_json(line,128*1024);r.sample(row);require(row["split"]==split&&row["dataset_id"]==manifest["dataset_id"]&&ids.insert(row["sample_id"].get<std::string>()).second,"split record identity");rows.push_back(row);require(rows.size()<=1000000,"record limit");}
+    while(std::getline(lines,line)){require(!line.empty(),"blank JSONL");auto row=parse_json(line,128*1024);r.sample(row);auto id=row["sample_id"].get<std::string>(),fp=row["family_fingerprint"].get<std::string>();
+      require(row["split"]==split&&row["dataset_id"]==manifest["dataset_id"]&&ids.insert(id).second&&all_ids.insert(id).second,"split record identity");
+      require(families.contains(fp)&&assigned(fp)==std::string(split),"native family split assignment");const auto& f=families.at(fp);
+      require(std::find(f["aliases"].begin(),f["aliases"].end(),row["family_id"])!=f["aliases"].end()&&std::find(f["members"].begin(),f["members"].end(),row["sample_id"])!=f["members"].end(),"family alias/member binding");
+      require(row["verification_profile"]==manifest["verification_profile"],"verification profile binding");composition.verify_dataset_row(row,f,manifest,split_config);
+      rows.push_back(row);require(rows.size()<=1000000,"record limit");}
     require(rows.size()==manifest["counts"][split]["records"].get<size_t>(),"split count");
   }
   require(!data.train.empty(),"empty train split");return data;

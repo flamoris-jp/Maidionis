@@ -130,7 +130,9 @@ class RegistryBuilder:
 
 class Registry:
     def __init__(self,descriptor,schemas,operations,build_digest):
-        self._descriptor=descriptor; self._schemas=schemas; self._operations=operations; self.build_digest=build_digest
+        self._descriptor=descriptor; self._schemas=schemas; self._operations=operations; self._build_digest=build_digest
+    @property
+    def build_digest(self): return self._build_digest
     @property
     def descriptor(self):
         import copy

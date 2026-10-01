@@ -77,6 +77,8 @@ class EducationHooks:
 
 class Controller:
     def __init__(self,plan,hooks,journal_root,teacher,reviewer,*,limits=TransportLimits(),cancelled=lambda:False):
+        import copy
+        plan=copy.deepcopy(plan); hooks=copy.deepcopy(hooks)
         self.plan=record('education-plan',plan); hooks.check(plan); limits.check()
         if not callable(teacher) or not callable(reviewer): raise ValueError('providers required')
         if len(plan['providers'])!=2 or getattr(teacher,'identity',None)!=plan['providers'][0] or getattr(reviewer,'identity',None)!=plan['providers'][1]:

@@ -95,6 +95,28 @@ schemas["education-plan"]=record("education-plan",experiment_id=ID,descriptor_di
  max_output_bytes=integer(1,2**30))
 schemas["journal-event"]=record("journal-event",sequence=integer(),previous_digest=HASH,event=ID,key=ID,
  content_digest=HASH,plan_digest=HASH)
+METRIC=obj(name=ID,version=ID,value=nullable(number()),numerator=number(0),support=integer(),
+ denominator=string(256),exclusions=integer(),slice=ID,warning=nullable(ID))
+schemas['evaluation-report']=record('evaluation-report',experiment_id=ID,run_id=ID,descriptor_digest=HASH,
+ evaluated_component_digest=HASH,evaluation_registration_digest=HASH,dataset_digest=HASH,artifact_digest=HASH,
+ split=SPLIT,selection_scope=enum('dev','train_diagnostic'),status=enum('complete','invalid_run'),
+ expected_samples=integer(),observed_samples=integer(),errors=arr(string(1024),1000),metrics=arr(METRIC,1000),
+ limitations=arr(string(4096),32))
+schemas['evaluation-summary']=record('evaluation-summary',report_digest=HASH,evaluation_registration_digest=HASH,
+ evaluated_component_digest=HASH,status=enum('complete','invalid_run'),passing={'type':'boolean'})
+schemas['family-index']=arr(obj(fingerprint=HASH,anchor=schemas['family-anchor'],
+ roots=arr(obj(digest=HASH,content=VALUE),1000,1),aliases=arr(ID,1000000,1,True),members=arr(ID,1000000,1,True)),1000000)
+schemas['model-config']=obj(kind=enum('dense','pooled','encoder'),input_width=integer(1,256),hidden_width=integer(1,1024),
+ output_width=integer(1,256),dropout_milli=integer(0,999),vocabulary=integer(0,8192),layers=integer(1,4),heads=integer(1,4),
+ ffn_width=integer(1,1024),max_length=integer(1,256),controls=arr(integer(1,8191),16,0,True))
+schemas['model-card']=obj(status=enum('research_candidate','research_only','release_candidate'),component_digest=HASH,
+ license=string(4096),intended_use=string(4096),limitations=arr(string(4096),32,1))
+schemas['training-metadata']=obj(training_run_id=ID,config=obj(seed=integer(),epochs=integer(1,10000),batch_size=integer(1,64),
+ patience=integer(1,10000),learning_rate=number(1e-12,1),weight_decay=number(0,1),max_grad_norm=number(1e-12,1000),
+ selection_scope=enum('dev','train_diagnostic'),scheduler=enum('linear_decay.v1'),optimizer=enum('adamw.v1'),
+ betas=arr(number(0,1),2,2),epsilon=number(1e-12,1),epoch_order=enum('sha256_sort.v1'),device=enum('cpu'),dtype=enum('float32'),threads={"const":1}),
+ state=schemas['training-state'],checkpoint_digest=HASH,dataset_digest=HASH,environment_digest=HASH,
+ descriptor_digest=HASH,build_digest=HASH,model_config=schemas['model-config'],weights_digest=HASH)
 for name, schema in schemas.items():
     schema={"$schema":"https://json-schema.org/draft/2020-12/schema","$id":"maidionis."+name+".v1",**schema}
     (Path(__file__).parent/(name+".schema.json")).write_text(json.dumps(schema,sort_keys=True,indent=2)+"\n")

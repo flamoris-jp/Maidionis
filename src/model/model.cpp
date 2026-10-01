@@ -17,6 +17,7 @@ void ModelConfig::validate() const {
 Json ModelConfig::json() const{return {{"kind",kind},{"input_width",input_width},{"hidden_width",hidden_width},{"output_width",output_width},
  {"dropout_milli",dropout_milli},{"vocabulary",vocabulary},{"layers",layers},{"heads",heads},{"ffn_width",ffn_width},{"max_length",max_length},{"controls",controls}};}
 ModelConfig ModelConfig::from_json(const Json& j) {
+  validate_record("model-config",j);
   ModelConfig c;c.kind=j.at("kind");c.input_width=j.at("input_width");c.hidden_width=j.at("hidden_width");c.output_width=j.at("output_width");
   c.dropout_milli=j.at("dropout_milli");c.vocabulary=j.at("vocabulary");c.layers=j.at("layers");c.heads=j.at("heads");c.ffn_width=j.at("ffn_width");c.max_length=j.at("max_length");c.controls=j.at("controls").get<std::vector<int64_t>>();
   TORCH_CHECK(c.json()==j,"unknown model config");c.validate();return c;
@@ -106,7 +107,20 @@ std::string numerical_environment() {
 }
 std::string save_model_bytes(ModelPtr m) {torch::serialize::OutputArchive a;m->save(a);std::ostringstream out;a.save_to(out);return out.str();}
 void load_model_bytes(ModelPtr m,const std::string& bytes) {
-  torch::serialize::InputArchive a;std::istringstream in(bytes);a.load_from(in,torch::kCPU);m->load(a);
+  torch::serialize::InputArchive a;std::istringstream in(bytes);a.load_from(in,torch::kCPU);
+  std::map<std::string,torch::Tensor> expected;std::set<std::string> modules,seen;
+  for(const auto& p:m->named_parameters())expected.emplace(p.key(),p.value());
+  for(const auto& p:m->named_buffers())expected.emplace(p.key(),p.value());
+  for(const auto& p:m->named_modules())modules.insert(p.key());
+  std::function<void(torch::serialize::InputArchive&,std::string)> inspect;
+  inspect=[&](torch::serialize::InputArchive& archive,std::string prefix){for(const auto& k:archive.keys()){
+    const auto name=prefix+k;torch::serialize::InputArchive child;
+    if(archive.try_read(k,child)){TORCH_CHECK(modules.contains(name),"unknown archive module");inspect(child,name+".");}
+    else {torch::Tensor value;TORCH_CHECK(expected.contains(name)&&seen.insert(name).second,"unknown/duplicate archive tensor");
+      archive.read(k,value,m->named_buffers().contains(name));auto t=expected.at(name);
+      TORCH_CHECK(value.device().is_cpu()&&value.scalar_type()==t.scalar_type()&&value.sizes()==t.sizes()&&torch::isfinite(value).all().item<bool>(),"archive key/shape/dtype contract");
+    }} };
+  inspect(a,"");TORCH_CHECK(seen.size()==expected.size(),"missing archive tensor");m->load(a);
   for(const auto& p:m->named_parameters())TORCH_CHECK(p.value().scalar_type()==torch::kFloat32&&p.value().device().is_cpu()&&torch::isfinite(p.value()).all().item<bool>(),"archive tensor invalid");
   m->enforce_constraints();
 }

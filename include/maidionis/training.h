@@ -11,7 +11,7 @@ struct TrainingConfig {
 };
 struct TrainingResult {ModelPtr final_model,best_model;Json state;std::string checkpoint_digest;double gradient_l1=0;};
 struct DatasetHandle {std::vector<Json> train,dev;std::string manifest_digest;};
-DatasetHandle training_data(const std::filesystem::path&,const std::string& trusted_digest,const Registry&);
+DatasetHandle training_data(const std::filesystem::path&,const std::string& trusted_digest,const NumericalComposition&);
 TrainingResult train(const NumericalComposition&,const DatasetHandle&,const TrainingConfig&,const std::filesystem::path& checkpoint_root,
                      bool resume=false,int64_t epochs_this_call=0,Fault={});
 }
