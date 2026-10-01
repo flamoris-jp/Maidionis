@@ -54,7 +54,7 @@ The repository is being established from controlled Arbitrium research. The reus
 
 No production-ready Maidionis model, stable artifact format, or Runtime integration is claimed yet.
 
-The existing research has demonstrated that a small native training path can learn tightly bounded lessons. It has **not** demonstrated sufficient held-out generalization, reliable abstention, or production quality. Those limitations remain part of the migration evidence rather than being hidden by the rename.
+The existing research has demonstrated that the training path can fit a tightly bounded train-only curriculum. It has **not** demonstrated sufficient held-out generalization, reliable abstention, or production quality. Those limitations remain part of the migration evidence rather than being hidden by the rename.
 
 ### Where it fits / FLAMORISのどこに属する？
 
