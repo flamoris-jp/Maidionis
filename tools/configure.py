@@ -12,5 +12,5 @@ args=[str(Path(cmake.CMAKE_BIN_DIR)/'cmake'),'-S','.', '-B',a.build_dir,'-DCMAKE
 if a.no_numerical: args+=['-DMAIDIONIS_NUMERICAL=OFF']
 else:
     import torch
-    args+=['-DCMAKE_PREFIX_PATH='+torch.utils.cmake_prefix_path]
+    args+=['-DMAIDIONIS_NUMERICAL=ON','-DCMAKE_PREFIX_PATH='+torch.utils.cmake_prefix_path]
 subprocess.run(args,check=True)

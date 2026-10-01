@@ -1,0 +1,33 @@
+#include "tinybeat_composition.h"
+using namespace maidionis;
+NumericalComposition tinybeat_composition(const std::filesystem::path& root) {
+  auto read=[&](const std::string& file){return parse_json(read_file(root/file,4*1024*1024),4*1024*1024);};
+  auto d=read("descriptor.json");RegistryBuilder builder(sha256("maidionis.test.tiny-beat.composition.v1\n"));
+  for(const auto& name:{"input","target","output"})builder.add_schema(d[std::string(name)+"_schema"],read(std::string(name)+".schema.json"));
+  for(const auto& name:{"input_codec","output_codec","architecture","objective","numerical_compatibility","head"}) {
+    const auto& ref=std::string(name)=="head"?d["heads"][0]:d[name];auto config=read(std::string(name)+".config.json");
+    const Json expected=std::string(name)=="input_codec"?Json{{"features",2},{"energy_divisor",100},{"position_divisor",15}}:
+      std::string(name)=="output_codec"?Json{{"threshold_milli",500},{"tie","positive"}}:
+      std::string(name)=="architecture"?Json{{"input_width",2},{"hidden_width",8},{"output_width",2},{"dropout_milli",100}}:
+      std::string(name)=="objective"?Json{{"reduction","mean"},{"kind","bernoulli"}}:
+      std::string(name)=="head"?Json{{"outputs",2}}:Json{{"profile","linux.cpu.fp32.serial.v1"},{"libtorch","2.5.1"},{"archive",1}};
+    if(ref["id"]!=std::string("test.tiny-beat.")+name||ref["version"]!="1"||config!=expected)throw std::invalid_argument("unknown compiled binding");
+    builder.add_operation(ref,config,[expected](const Json& c){if(c!=expected)throw std::invalid_argument("config binding");});
+  }
+  NumericalComposition c;c.registry=builder.freeze(d);
+  if(d["task_id"]!="test.tiny-beat"||d["specialization_id"]!="test.tiny-beat"||d["task_version"]!="1"||d["specialization_version"]!="1"||
+     d["diagnostics_schema"]!=nullptr||d["heads"].size()!=1||d["semantic_spec"]["path"]!="semantic.txt"||
+     sha256(read_file(root/"semantic.txt",4096))!=d["semantic_spec"]["sha256"].get<std::string>())throw std::invalid_argument("test descriptor binding");
+  c.encode=[r=c.registry](const std::vector<Json>& rows) {
+    std::vector<std::vector<float>> x,y;
+    for(const auto& row:rows) {
+      if(row.contains("input")){r.sample(row);x.push_back({row["input"]["energy"].get<float>()/100,row["input"]["beat_position"].get<float>()/15});
+        y.push_back({row["target"]["kick"].get<bool>()?1.f:0.f,row["target"]["snare"].get<bool>()?1.f:0.f});}
+      else {r.payload("input_schema",row);x.push_back({row["energy"].get<float>()/100,row["beat_position"].get<float>()/15});}
+    }
+    return dense_batch(x,y,2,2);
+  };
+  c.objective=[](const torch::Tensor& logits,const Batch& b){return bernoulli_loss(logits,b.targets);};
+  c.decode=[](const torch::Tensor& logits){if(logits.numel()!=2)throw std::invalid_argument("decode shape");auto p=torch::sigmoid(logits.flatten());return Json{{"kick",p[0].item<float>()>=.5f},{"snare",p[1].item<float>()>=.5f}};};
+  c.validate();return c;
+}
