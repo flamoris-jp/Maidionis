@@ -3,7 +3,14 @@ using namespace maidionis;
 NumericalComposition tinybeat_composition(const std::filesystem::path& root) {
   auto read=[&](const std::string& file){return parse_json(read_file(root/file,4*1024*1024),4*1024*1024);};
   auto d=read("descriptor.json");RegistryBuilder builder(compiled_build_digest());
-  for(const auto& name:{"input","target","output"})builder.add_schema(d[std::string(name)+"_schema"],read(std::string(name)+".schema.json"));
+  for(const auto& name:{"input","target","output"}){
+    Json expected=std::string(name)=="input"?Json{{"type","object"},{"additionalProperties",false},{"required",{"energy","beat_position"}},
+      {"properties",{{"energy",{{"type","integer"},{"minimum",0},{"maximum",100}}},{"beat_position",{{"type","integer"},{"minimum",0},{"maximum",15}}}}}}:
+      Json{{"type","object"},{"additionalProperties",false},{"required",{"kick","snare"}},{"properties",{{"kick",{{"type","boolean"}}},{"snare",{{"type","boolean"}}}}}};
+    const auto& ref=d[std::string(name)+"_schema"];auto definition=read(std::string(name)+".schema.json");
+    if(ref["id"]!=std::string("test.tiny-beat.")+name||ref["version"]!="1"||definition!=expected)throw std::invalid_argument("compiled schema binding");
+    builder.add_schema(ref,definition);
+  }
   for(const auto& name:{"input_codec","output_codec","architecture","objective","numerical_compatibility","head"}) {
     const auto& ref=std::string(name)=="head"?d["heads"][0]:d[name];auto config=read(std::string(name)+".config.json");
     const Json expected=std::string(name)=="input_codec"?Json{{"features",2},{"energy_divisor",100},{"position_divisor",15}}:
@@ -17,6 +24,7 @@ NumericalComposition tinybeat_composition(const std::filesystem::path& root) {
   NumericalComposition c;c.registry=builder.freeze(d);
   if(d["task_id"]!="test.tiny-beat"||d["specialization_id"]!="test.tiny-beat"||d["task_version"]!="1"||d["specialization_version"]!="1"||
      d["diagnostics_schema"]!=nullptr||d["heads"].size()!=1||d["semantic_spec"]["path"]!="semantic.txt"||
+     read_file(root/"semantic.txt",4096)!="Tiny Beat synthetic oracle v1: kick when energy >= 50; snare when position >= 8. Mechanics only.\n"||
      sha256(read_file(root/"semantic.txt",4096))!=d["semantic_spec"]["sha256"].get<std::string>())throw std::invalid_argument("test descriptor binding");
   c.encode=[r=c.registry](const std::vector<Json>& rows) {
     std::vector<std::vector<float>> x,y;
@@ -36,6 +44,7 @@ NumericalComposition tinybeat_composition(const std::filesystem::path& root) {
     auto grouping=ref("group",Json{{"projection","energy-position-v1"}}),dedup=ref("dedup",Json{{"projection","exact-input"}});
     if(family["roots"]!=Json::array({Json{{"digest",sha256(canonical(root))},{"content",root}}})||config["hook"]!=hook||config["grouping"]!=grouping||
        manifest["dedup_profile"]!=dedup||manifest["verification_profile"]!=verify||row["verification_profile"]!=verify||row["supersedes"]!=nullptr||
+       manifest["generator"]!=Json{{"code_digest",compiled_build_digest()},{"config_digest",sha256(canonical(Json{{"grid","energy-0..100-step-10,position-0..15"}}))}}||
        row["target"]!=Json{{"kick",input["energy"].get<int>()>=50},{"snare",input["beat_position"].get<int>()>=8}})throw std::invalid_argument("native Tiny Beat frozen eligibility");
   };
   c.validate();return c;

@@ -105,7 +105,11 @@ schemas['evaluation-report']=record('evaluation-report',experiment_id=ID,run_id=
 schemas['evaluation-summary']=record('evaluation-summary',report_digest=HASH,evaluation_registration_digest=HASH,
  evaluated_component_digest=HASH,status=enum('complete','invalid_run'),passing={'type':'boolean'})
 schemas['family-index']=arr(obj(fingerprint=HASH,anchor=schemas['family-anchor'],
- roots=arr(obj(digest=HASH,content=VALUE),1000,1),aliases=arr(ID,1000000,1,True),members=arr(ID,1000000,1,True)),1000000)
+ roots=arr(obj(digest=HASH,content=VALUE),1000,1),aliases=arr(ID,1000000,1,True),members=arr(ID,1000000,1,True),audit_members=arr(ID,1000000,0,True)),1000000)
+import copy
+schemas['audit-ancestor']=copy.deepcopy(schemas['sample'])
+schemas['audit-ancestor']['properties']['schema_version']={'const':'maidionis.audit-ancestor.v1'}
+schemas['audit-ancestor']['properties']['verification_status']=enum('verified','unverified','rejected')
 schemas['model-config']=obj(kind=enum('dense','pooled','encoder'),input_width=integer(1,256),hidden_width=integer(1,1024),
  output_width=integer(1,256),dropout_milli=integer(0,999),vocabulary=integer(0,8192),layers=integer(1,4),heads=integer(1,4),
  ffn_width=integer(1,1024),max_length=integer(1,256),controls=arr(integer(1,8191),16,0,True))

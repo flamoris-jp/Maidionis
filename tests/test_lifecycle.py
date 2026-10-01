@@ -159,6 +159,11 @@ class Lifecycle(unittest.TestCase):
             else:m['files'].append(dict(path='manifest.json',sha256='0'*64,bytes=1))
             (root/'manifest.json').write_bytes(canonical(m));h=digest(canonical(m))
             run('validate',self.composition,root,h,'offline_evaluation',success=False)
+        changed=self.root/'unknown-schema-composition';shutil.copytree(self.composition,changed)
+        definition=loads((changed/'input.schema.json').read_bytes());definition['properties']['energy']['maximum']=101
+        (changed/'input.schema.json').write_bytes(canonical(definition));descriptor=loads((changed/'descriptor.json').read_bytes())
+        descriptor['input_schema']['sha256']=digest(canonical(definition));(changed/'descriptor.json').write_bytes(canonical(descriptor))
+        run('validate',changed,self.candidate,self.candidate_digest,'offline_evaluation',success=False)
     def test_every_checkpoint_inventory_member_corruption_rejects_resume(self):
         import shutil
         source=self.root/'resumed-checkpoints';pointer=loads((source/'latest.json').read_bytes())

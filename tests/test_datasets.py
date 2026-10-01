@@ -6,6 +6,27 @@ from fixture_data import *
 from maidionis_education.datasets import validate_dataset,split_for,_validate
 
 class Datasets(unittest.TestCase):
+    def test_correction_retains_unverified_original_only_in_audit(self):
+        rows,proofs=fixture();original=copy.deepcopy(rows[0]);oldproof=copy.deepcopy(proofs[0])
+        original['schema_version']='maidionis.audit-ancestor.v1';original['verification_status']='unverified'
+        original['target']['kick']=not original['target']['kick']
+        oldproof.update(final_target=original['target'],proposed_target=original['target'],reviewed_target=original['target'],
+                        outcome='unverified',disposition='rejected')
+        rows[0].update(sample_id='correction:0',provenance_id='corrected-proof:0',supersedes=original['sample_id'])
+        proofs[0].update(sample_id=rows[0]['sample_id'],provenance_id=rows[0]['provenance_id'],supersedes=original['sample_id'],disposition='corrected')
+        proofs.append(oldproof)
+        with tempfile.TemporaryDirectory() as td:
+            root=Path(td)/'corrected'
+            h=freeze(root,rows,proofs,registry(),hooks(),component_files(),dataset_id='test.grid.v1',seed=42,created_at=TIME,
+                generator=dict(code_digest=GEN['config_digest'],config_digest=HOOK['config_digest']),license_summary='Apache-2.0 synthetic',
+                limitations=['Synthetic mechanics'],audit_ancestors=[original])
+            m,admitted=validate_dataset(root,h,registry(),hooks())
+            self.assertEqual(len(admitted),176);self.assertNotIn(original['sample_id'],{r['sample_id'] for r in admitted})
+            corrected=next(r for r in admitted if r['sample_id']=='correction:0')
+            self.assertEqual(corrected['family_fingerprint'],original['family_fingerprint'])
+            self.assertIn(canonical(original),(root/'audit-ancestors.jsonl').read_bytes())
+            original['family_fingerprint']='0'*64
+            with self.assertRaises(ValueError):_validate(rows,proofs,registry(),hooks(),42,'test.grid.v1',[original])
     def test_deterministic_freeze_and_rename(self):
         with tempfile.TemporaryDirectory() as td:
             a=Path(td)/'a';b=Path(td)/'b'

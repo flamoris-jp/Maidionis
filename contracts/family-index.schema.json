@@ -85,6 +85,18 @@
         ],
         "type": "object"
       },
+      "audit_members": {
+        "items": {
+          "maxLength": 128,
+          "minLength": 1,
+          "pattern": "^[A-Za-z0-9._:-]{1,128}$",
+          "type": "string"
+        },
+        "maxItems": 1000000,
+        "minItems": 0,
+        "type": "array",
+        "uniqueItems": true
+      },
       "fingerprint": {
         "maxLength": 64,
         "minLength": 1,
@@ -153,7 +165,8 @@
       "anchor",
       "roots",
       "aliases",
-      "members"
+      "members",
+      "audit_members"
     ],
     "type": "object"
   },

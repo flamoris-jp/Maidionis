@@ -84,7 +84,9 @@ do not make a malicious native archive safe: sources require trusted provenance.
   task-specific/categorical/ordinal reducers remain specialization follow-on work.
 - The test-only Tiny Beat native verifier accepts the preregistered grid/oracle
   profile, including its null correction lineage. Generic Python freeze supports
-  same-family correction ancestry; native support for other verification or
+  same-family correction ancestry, retaining unverified/rejected originals in
+  a separate inventoried audit stream rather than admitting them to training;
+  native support for other verification or
   legacy profiles requires an explicit specialization composition.
 - Checkpoint recovery never silently overwrites a published epoch. After a
   pointer-publication failure, the previous pointer remains usable and an orphan

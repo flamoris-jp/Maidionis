@@ -58,12 +58,29 @@ def prepare_sample(sample, registry, hooks, seed):
     registry.sample(result)
     return result
 
-def _validate(samples, provenance, registry, hooks, seed, dataset_id):
+def _validate(samples, provenance, registry, hooks, seed, dataset_id, audit_ancestors=()):
     hooks.check(); ids = {}; proofs = {}; families = {}; equivalent = {}; root_owner = {}; aliases = {}
     for p in provenance:
         record('provenance', p)
         if p['provenance_id'] in proofs: raise ValueError('duplicate provenance')
         proofs[p['provenance_id']] = p
+    audit_ids=set()
+    for row in audit_ancestors:
+        record('audit-ancestor',row)
+        d=registry.descriptor
+        for k in ('specialization_id','specialization_version','task_id','task_version','input_schema','target_schema'):
+            if row[k]!=d[k]: raise ValueError('ancestor contract identity')
+        registry.payload('input_schema',row['input']);registry.payload('target_schema',row['target'])
+        if row['sample_id'] in ids: raise ValueError('duplicate audit ancestor')
+        ids[row['sample_id']]=row;audit_ids.add(row['sample_id'])
+        fp,_,_=family_for(row,registry,hooks)
+        if row['family_fingerprint']!=fp or row['split']!=split_for(fp,seed): raise ValueError('ancestor family/split binding')
+        p=proofs.get(row['provenance_id'])
+        if p is None or p['sample_id']!=row['sample_id'] or p['source_digest']!=digest(canonical(row['input'])) or p['final_target']!=row['target'] or p['supersedes']!=row['supersedes']:
+            raise ValueError('ancestor provenance binding')
+        if not p['source_license'] or (p['teacher'] is None and p['reviewer'] is None and not p['non_model_source_reason']):
+            raise ValueError('ancestor source evidence')
+        if row['verification_status']!=p['outcome'] or row['verification_profile']!=p['verification_profile']: raise ValueError('ancestor audit status/profile')
     for row in samples:
         registry.sample(row)
         if row['sample_id'] in ids or row['dataset_id'] != dataset_id: raise ValueError('sample identity')
@@ -85,10 +102,11 @@ def _validate(samples, provenance, registry, hooks, seed, dataset_id):
             raise ValueError('verification eligibility')
         if p['teacher'] is None and p['reviewer'] is None and not p['non_model_source_reason']: raise ValueError('absent source reason')
         if p['supersedes'] != row['supersedes'] or not p['source_license'] or not hooks.verify(row, p): raise ValueError('verification/lineage')
-        group = families.setdefault(fp, dict(fingerprint=fp, anchor=anchor, roots=roots, aliases=[], members=[]))
+        group = families.setdefault(fp, dict(fingerprint=fp, anchor=anchor, roots=roots, aliases=[], members=[],audit_members=[]))
         group['aliases'].append(row['family_id']); group['members'].append(row['sample_id'])
-    if len(proofs) != len(samples): raise ValueError('extra provenance')
-    for row in samples:
+    if len(proofs) != len(samples)+len(audit_ancestors): raise ValueError('extra provenance')
+    used_audit=set()
+    for row in [*samples,*audit_ancestors]:
         if row['supersedes'] is not None:
             prior = ids.get(row['supersedes'])
             if prior is None or prior['family_fingerprint'] != row['family_fingerprint'] or prior['split'] != row['split']:
@@ -97,8 +115,16 @@ def _validate(samples, provenance, registry, hooks, seed, dataset_id):
         while cur['supersedes'] is not None:
             if cur['sample_id'] in seen: raise ValueError('lineage cycle')
             seen.add(cur['sample_id']); cur = ids[cur['supersedes']]
+            if cur['sample_id'] in audit_ids:used_audit.add(cur['sample_id'])
+    if used_audit!=audit_ids:raise ValueError('unreferenced audit ancestor')
+    for row in audit_ancestors:
+        fp=row['family_fingerprint']
+        if fp not in families:raise ValueError('audit ancestor has no admitted descendant')
+        if row['family_id'] in aliases and aliases[row['family_id']]!=fp:raise ValueError('ancestor alias collision')
+        aliases[row['family_id']]=fp
+        families[fp]['aliases'].append(row['family_id']);families[fp]['audit_members'].append(row['sample_id'])
     for f in families.values():
-        f['aliases'] = sorted(set(f['aliases'])); f['members'].sort()
+        f['aliases'] = sorted(set(f['aliases'])); f['members'].sort();f['audit_members'].sort()
     return sorted(families.values(), key=lambda f:f['fingerprint'])
 
 def _counts(samples):
@@ -114,10 +140,11 @@ def _counts(samples):
     return counts
 
 def freeze(root, samples, provenance, registry, hooks, component_files, *, dataset_id, seed, created_at, generator,
-           license_summary, limitations, purpose='research_fixture', fault=lambda _:None):
+           license_summary, limitations, purpose='research_fixture', audit_ancestors=(),fault=lambda _:None):
     root = Path(root)
     if len(samples) > 1000000 or not samples: raise ValueError('dataset sample bound')
-    families = _validate(samples, provenance, registry, hooks, seed, dataset_id)
+    if len(samples)+len(audit_ancestors)>1000000:raise ValueError('audit/sample bound')
+    families = _validate(samples, provenance, registry, hooks, seed, dataset_id,audit_ancestors)
     files = dict(component_files)
     if files.get('descriptor.json') != canonical(registry.descriptor): raise ValueError('descriptor bytes')
     descriptor=registry.descriptor
@@ -128,10 +155,11 @@ def freeze(root, samples, provenance, registry, hooks, component_files, *, datas
     required += [r['config_digest'] for r in descriptor['heads']]
     actual={digest(b) for b in files.values()}
     if not set(required)<=actual: raise ValueError('missing bound schema/config component')
-    if any(name in files for name in ('family-index.json','provenance.jsonl','split.config.json','manifest.json',*(s+'.jsonl' for s in SPLITS))):
+    if any(name in files for name in ('family-index.json','provenance.jsonl','audit-ancestors.jsonl','split.config.json','manifest.json',*(s+'.jsonl' for s in SPLITS))):
         raise ValueError('reserved dataset member')
     files['family-index.json'] = canonical(families)
     files['provenance.jsonl'] = b''.join(canonical(p) for p in sorted(provenance,key=lambda p:p['provenance_id']))
+    files['audit-ancestors.jsonl']=b''.join(canonical(r) for r in sorted(audit_ancestors,key=lambda r:r['sample_id']))
     for split in SPLITS:
         lines = [canonical(r) for r in sorted(samples,key=lambda r:r['sample_id']) if r['split'] == split]
         if any(len(line) > 128*1024 for line in lines): raise ValueError('record byte bound')
@@ -168,7 +196,8 @@ def validate_dataset(root, trusted_digest, registry, hooks):
         if any(r['split'] != split for r in rows): raise ValueError('split framing')
         samples.extend(rows)
     proofs = jsonl(files['provenance.jsonl'])
-    families = _validate(samples, proofs, registry, hooks, m['split_profile']['seed'], m['dataset_id'])
+    ancestors=jsonl(files['audit-ancestors.jsonl'])
+    families = _validate(samples, proofs, registry, hooks, m['split_profile']['seed'], m['dataset_id'],ancestors)
     if files['family-index.json'] != canonical(families) or digest(files['family-index.json']) != m['split_profile']['family_registry_digest']:
         raise ValueError('family registry binding')
     if digest(files['provenance.jsonl']) != m['provenance_index']['sha256'] or m['counts'] != _counts(samples): raise ValueError('provenance/count binding')

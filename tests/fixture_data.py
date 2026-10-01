@@ -31,5 +31,5 @@ def fixture():
 def frozen(root, fault=lambda _:None):
     rows,proofs=fixture()
     return freeze(root,rows,proofs,registry(),hooks(),component_files(),dataset_id='test.grid.v1',seed=42,created_at=TIME,
-                  generator=dict(code_digest=GEN['config_digest'],config_digest=HOOK['config_digest']),license_summary='Synthetic Apache-2.0 test fixture',
+                  generator=dict(code_digest=BUILD,config_digest=GEN['config_digest']),license_summary='Synthetic Apache-2.0 test fixture',
                   limitations=['Train-only synthetic mechanics; no generalization or musical quality claim.'],fault=fault)
