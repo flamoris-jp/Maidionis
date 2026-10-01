@@ -19,6 +19,10 @@ The [design index](README.md) pins the inspected public Runtime revision.
 These paths belong to [AI Runtime](https://github.com/flamoris-jp/flamoris-ai-runtime/tree/3e8b04137b7510023cb1799aaacfbe3e9cf73771).
 The initial integration target is a **registered bounded Workflow capability**
 calling a local immutable-model provider. It is not a native causal InferenceJob.
+The provider/host composition is owned outside Runtime's base library, initially
+by Arbitrium as defined in the [composition root](architecture.md#composition-root).
+Runtime sees the declared capability schemas and provider port, not Decision
+codec/objective/recovery logic. This bridge is not yet implemented.
 `CapabilityContract.inference=false`, `cancellable=false`, `pausable=false`,
 `retry_permitted=false`, `max_attempts=1` are the initial baseline declarations.
 Exact capability naming is chosen in the Runtime PR after rechecking current
@@ -38,6 +42,14 @@ must account model storage, allocator/framework/context overhead and peak
 transient buffers; no hidden model cache outside Runtime accounting. Changing
 artifact, descriptor, adapter/profile or resource contract changes the capability
 fingerprint. A stale plan fails pin validation before dispatch.
+
+Runtime registration owns selected device/residency, effects, deadlines, retry,
+control support and resource ceilings, with a separate version/config digest.
+It pins the provider/composition build and artifact and checks compatibility
+against the descriptor's numerical requirements. It cannot overwrite the task's
+decoder or grant model/release approval. A changed control/resource policy gets
+a new capability fingerprint and qualifications; it does not mutate descriptor
+or calibration bytes. Evaluation approval pins its own registration separately.
 
 The current `RuntimeResidencyPool` cannot hold a Maidionis model. R1 must add a
 Runtime-owned immutable provider-model holder/accounting seam: reserve capacity

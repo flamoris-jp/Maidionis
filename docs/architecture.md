@@ -44,6 +44,47 @@ flowchart TD
 - Education coordination may invoke verified native tools with argument vectors
   and bounded files/pipes. Python does not run torch or copy model math.
 
+## Composition root
+
+**Arbitrium owns the Decision composition root**, including offline drivers and
+the provider bridge. Core exposes registry/component contracts; the compiled
+specialization supplies implementations; an explicit application target links
+them. Names below are proposed build targets, not existing commands or an ABI.
+
+| Proposed target | Source owner | Dependencies and responsibility |
+|---|---|---|
+| `maidionis_core` | Maidionis | neutral mechanisms and registry builder; no Arbitrium or Runtime dependency |
+| `arbitrium_specialization` | Arbitrium | links Core; Decision codec/validators/heads/objective/decode/verifier/evaluation rules |
+| `arbitrium_composition` | Arbitrium | links specialization/Core; installs exact compiled entries and freezes the Decision registry; no Runtime dependency |
+| offline train/evaluate/export drivers | Arbitrium | use that composition and Core engines with bounded offline data/resource configuration |
+| `arbitrium_provider` | Arbitrium adapter target | links composition and public Runtime adapter contracts; task validation/encoding stays here, transport/accounting stays with Runtime |
+| Runtime host composition | Arbitrium or a separate deployment application | explicitly links provider and Runtime library; registers the provider with Runtime under trusted host configuration |
+
+Core never discovers/imports Arbitrium; Runtime's base library/build never imports
+it either. Depending on Runtime's public port headers in the separate bridge is
+an outward integration dependency, not permission to move Decision code into
+Runtime. There is no dynamic library/path/import/plugin discovery in v1.
+
+Startup is: create a Core registry builder → install selected Core numerical
+primitives → call Arbitrium's compiled registration function → verify unique
+ID/version/config/schema bindings and complete operations → freeze immutable
+registry → resolve a descriptor. Registration includes codec, target validator,
+head/objective factories, decode/verification and evaluation hooks. A missing,
+duplicate or mismatched entry fails startup; no inference/training registration
+mutation or unknown-ID fallback. Data chooses an allowed registered ID, never
+creates a function or installs a plugin. Artifact compatibility records bind
+the tested composition build/dependency identities as well as component versions.
+Initialization/training/serving processes use the same resolved operation set;
+the checkpoint pins it to prevent silently resuming with changed implementations.
+
+Maidionis's own CLIs/tests can use a neutral composition; they must not hardcode
+Decision registration. Generic education orchestration invokes the specialization's
+compiled driver rather than assuming a Core binary knows every specialization.
+The synthetic non-Decision test composition lives only in Maidionis tests and
+links Core without Arbitrium/Runtime; see [acceptance](acceptance-and-migration.md).
+Each target remains optional to unrelated applications. M1 defines the builder
+surface and M2 proves neutral composition; A2 supplies the actual Decision root.
+
 ## Initial numerical profile
 
 Reuse the demonstrated C++20/CMake/LibTorch CPU FP32 path and SentencePiece
@@ -100,11 +141,11 @@ Continuations or durable production recovery. Serving weights remain immutable.
 | `src/model/`, `src/training/` | numerical components and training driver |
 | `src/calibration/`, `src/evaluation/` | reusable algorithms and measurement primitives |
 | `src/artifact/`, `src/inference/` | validated bundle I/O and bounded invocation composition |
-| `src/app/` | offline CLI/file boundary, commands documented only once verified |
+| `src/app/` | neutral offline CLI/file boundary; no implicit Decision registration; commands documented only once verified |
 | `education/python/src/maidionis_education/` | provider transport, journal, freeze and offline controller |
 | `contracts/`, `tests/`, `education/python/tests/` | shared schemas/fixtures and neutral tests |
 | `docs/` | reviewed contracts, acceptance and migration evidence |
-| Arbitrium repository | `arbitrium` namespace, Decision codec/heads/policy, curricula and reports |
+| Arbitrium repository | `arbitrium` namespace, specialization/composition/drivers/provider bridge, Decision codec/heads/policy, curricula and reports |
 
 Use C++ namespace `maidionis`, Python package `maidionis_education` and format
 prefix `maidionis.*`. Naming an architecture/head component does not grant it

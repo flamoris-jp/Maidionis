@@ -63,6 +63,9 @@ gradient finiteness/clipping, optimizer steps, history and checkpoint publicatio
 Specialization supplies target masks and objective semantics. The source's
 combined categorical/answerability objective and fixed loss weight are a
 Decision composition; they are not hardcoded into the neutral loop.
+The [specialization-owned composition root](architecture.md#composition-root)
+installs these compiled operations and freezes the registry before training.
+Offline Arbitrium drivers link that root; Core does not import Decision code.
 
 Initialization seed applies **before model construction**; loop reseeding is
 insufficient. Record CPU/other RNG streams, epoch-order algorithm/version,
