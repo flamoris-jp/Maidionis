@@ -1,0 +1,17 @@
+#pragma once
+#include "maidionis/model.h"
+#include "maidionis/storage.h"
+namespace maidionis {
+struct TrainingConfig {
+  int64_t seed=42,epochs=6,batch_size=16,patience=100;
+  double learning_rate=.02,weight_decay=.001,max_grad_norm=1;
+  std::string selection_scope="train_diagnostic";
+  Json json() const;
+  void validate() const;
+};
+struct TrainingResult {ModelPtr final_model,best_model;Json state;std::string checkpoint_digest;double gradient_l1=0;};
+struct DatasetHandle {std::vector<Json> train,dev;std::string manifest_digest;};
+DatasetHandle training_data(const std::filesystem::path&,const std::string& trusted_digest,const Registry&);
+TrainingResult train(const NumericalComposition&,const DatasetHandle&,const TrainingConfig&,const std::filesystem::path& checkpoint_root,
+                     bool resume=false,int64_t epochs_this_call=0,Fault={});
+}
