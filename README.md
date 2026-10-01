@@ -139,6 +139,11 @@ There is no supported build or run command yet because implementation migration 
 
 Start with [Issue #1: Design Maidionis Core and migrate Arbitrium as the first specialization](https://github.com/flamoris-jp/Maidionis/issues/1).
 
+The [Core design proposal](docs/README.md) defines specialization, data, education,
+checkpoint/artifact, evaluation and Runtime boundaries, with an Arbitrium extraction
+map and focused implementation acceptance plan. These are reviewable design
+contracts; implementation migration and Runtime integration remain future work.
+
 Repository-specific build, test, and experiment commands will be documented only after they exist and are verified against the current implementation.
 
 ## FLAMORIS
