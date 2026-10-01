@@ -57,6 +57,11 @@ class Lifecycle(unittest.TestCase):
             tolerance=1e-6,environment_digest=cls.full['environment_digest'])
         cls.registration_digest=digest(canonical(cls.registration));cls.candidate=cls.root/'candidate'
         p=plan();p['evaluation_policy_digest']=POLICY
+        training=loads((cls.root/'full'/'training.json').read_bytes(),4*2**20)
+        p['training_config_digest']=digest(canonical(training['config']))
+        p['selection_config_digest']=digest(canonical(dict(selection_scope='train_diagnostic',tie='first-improving-epoch')))
+        p['dataset_references']=[dict(id=cls.manifest['dataset_id'],digest=cls.data_digest)]
+        cls.education_plan=p
         cls.ledger=EvaluationLedger(cls.root/'evaluation-ledger',p)
         cls.ledger.register(cls.registration,p);cls.ledger.admit(cls.registration,'Train-only synthetic mechanics')
         cls.candidate_digest=export_candidate(cls.candidate,cls.components,cls.root/'full',cls.registration,
@@ -179,7 +184,7 @@ class Lifecycle(unittest.TestCase):
             result=run('train',self.dataset,self.data_digest,recovered,self.root/('recovery-out-'+str(i)),1,1)
             self.assertGreater(result['state']['global_step'],loads((epoch/'state.json').read_bytes())['global_step'])
     def test_preregistration_and_finalization_cannot_substitute_components(self):
-        p=plan();p['evaluation_policy_digest']=POLICY
+        p=self.education_plan
         changed=dict(self.registration,policy_digest='0'*64)
         with self.assertRaises(ValueError):self.ledger.register(changed,p)
         with self.assertRaises(ValueError):self.ledger.admit(self.registration,'repeat')

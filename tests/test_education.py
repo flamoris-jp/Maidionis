@@ -15,7 +15,7 @@ def plan():
         calibration_config_digest=None,evaluation_policy_digest=BUILD,max_cycles=2,max_attempts=8,max_examples=2,
         max_elapsed_seconds=60,max_output_bytes=2**20)
 def education_hooks():
-    return EducationHooks(HOOK,BUILD,VERIFY,lambda x:dict(input=x),lambda x:registry().payload('target_schema',x),
+    return EducationHooks(HOOK,BUILD,VERIFY,digest(canonical(DESCRIPTOR)),BUILD,BUILD,lambda x:dict(input=x),lambda x:registry().payload('target_schema',x),
         lambda x,a,b:dict(status='verified' if a==b==oracle(x) else 'unverified',target=a))
 class Fake:
     identity=HOOK
@@ -66,6 +66,9 @@ class Education(unittest.TestCase):
             self.assertEqual(len(a.calls),1)
         p=plan();p['native_build_digest']='0'*64
         with self.assertRaises(ValueError): Controller(p,education_hooks(),'unused',Fake([]),Fake([]))
+        for field in ('descriptor_digest','curriculum_digest','prompt_digest'):
+            p=plan();p[field]='0'*64
+            with self.assertRaises(ValueError):Controller(p,education_hooks(),'unused',Fake([]),Fake([]))
     def test_bounds_cancel_corrupt_and_uncertain_journal(self):
         x=dict(energy=100,beat_position=15)
         with tempfile.TemporaryDirectory() as td:

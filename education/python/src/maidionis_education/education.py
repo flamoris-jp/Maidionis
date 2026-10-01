@@ -111,12 +111,17 @@ class EducationHooks:
     identity: dict
     native_build_digest: str
     verification_profile: dict
+    descriptor_digest: str
+    curriculum_digest: str
+    prompt_digest: str
     render: object
     validate_target: object
     adjudicate: object
     def check(self,plan):
         if self.identity!=plan['hook_identity'] or self.native_build_digest!=plan['native_build_digest'] or self.verification_profile!=plan['verification_profile']:
             raise ValueError('education hook identity')
+        if self.descriptor_digest!=plan['descriptor_digest'] or self.curriculum_digest!=plan['curriculum_digest'] or self.prompt_digest!=plan['prompt_digest']:
+            raise ValueError('education task/curriculum/prompt binding')
         if not all(callable(x) for x in (self.render,self.validate_target,self.adjudicate)): raise ValueError('missing explicit education hook')
 
 class Controller:
