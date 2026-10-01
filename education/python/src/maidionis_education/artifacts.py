@@ -15,6 +15,7 @@ def export_components(component_files,trained_root):
 
 def export_candidate(root,components,trained_root,registration,*,artifact_id,created_at,model_card):
     trained_root=Path(trained_root);files=dict(components)
+    if set(files)&EXCLUDED: raise ValueError('reserved artifact evidence member')
     training=loads(read(trained_root/'training.json',4*2**20),4*2**20);record('training-metadata',training)
     summary=loads(read(trained_root/'summary.json',4*2**20),4*2**20)
     comp=component_digest(files);record('evaluation-registration',registration)
@@ -22,9 +23,16 @@ def export_candidate(root,components,trained_root,registration,*,artifact_id,cre
         raise ValueError('export registration binding')
     if training['weights_digest']!=digest(files['weights.pt']) or training['state']['best_weights_digest']!=training['weights_digest']:
         raise ValueError('selected-best export')
+    model_config=record('model-config',loads(files['model.config.json']))
+    env=summary['environment']
+    if training['descriptor_digest']!=registration['descriptor_digest'] or training['model_config']!=model_config:
+        raise ValueError('export training components')
+    if registration['environment_digest']!=training['environment_digest'] or digest(canonical(env))!=training['environment_digest'] or summary['environment_digest']!=training['environment_digest']:
+        raise ValueError('export numerical environment')
+    if registration['selection_scope']!=training['state']['selection_scope'] or registration['calibration']!='not_applicable':
+        raise ValueError('export selection/calibration profile')
     files['training.json']=canonical(training);files['evaluation-registration.json']=canonical(registration)
     card=dict(model_card,status='research_candidate',component_digest=comp);record('model-card',card);files['model-card.json']=canonical(card)
-    env=summary['environment']
     m=record('artifact',dict(schema_version='maidionis.artifact.v1',format_version=1,artifact_id=artifact_id,created_at=created_at,
         descriptor_digest=digest(files['descriptor.json']),training_run_id=training['training_run_id'],status='research_candidate',files=inventory(files),
         compatibility=dict(profile='linux.cpu.fp32.serial.v1',build_digest=training['build_digest'],libtorch=env['libtorch'],
@@ -52,6 +60,8 @@ def finalize(candidate,expected_digest,destination,report,summary,*,artifact_id,
     registration=record('evaluation-registration',loads(files['evaluation-registration.json']))
     for k in ('descriptor_digest','dataset_digest','split','selection_scope','experiment_id'):
         if report[k]!=registration[k]: raise ValueError('report registration binding')
+    if report['status']=='complete' and (report['errors'] or report['expected_samples']!=report['observed_samples'] or report['expected_samples']<registration['minimum_samples']):
+        raise ValueError('complete accounting')
     if summary['passing'] and report['status']!='complete': raise ValueError('invalid passing evidence')
     # No automatic release/promotion operation exists in this API.
     files['evaluation-report.json']=canonical(report);files['evaluation-summary.json']=canonical(summary)

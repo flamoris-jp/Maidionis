@@ -99,6 +99,12 @@ are distinct; never rewrite recorded predictions to pretend the final artifact
 was the object loaded. Runtime serving also requires external approval of the
 exact completed artifact, not merely a completed status.
 
+Initial Python candidate export rejects reserved evidence files and binds the
+exported descriptor/model configuration, selected weights, numerical environment
+and selection scope to training metadata and evaluation registration before
+publication. Archive calibration is limited to the explicit `not_applicable`
+profile. Native metadata validation remains required before materialization.
+
 For serving, Runtime reserves CPU RAM and any selected device capacity **before**
 the worker calls materialization; it also owns the validation admission. For
 offline train/export/tests, an explicit bounded offline host supplies the context

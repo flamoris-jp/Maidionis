@@ -40,6 +40,11 @@ class EvaluationLedger:
 def evaluate(dataset,predictions,registration,registry,*,run_id,artifact_digest,reducers,passing_policy,baselines=None):
     record('evaluation-registration',registration)
     rh=digest(canonical(registration)); errors=[]; ids={}; seen=set(); good=[]
+    error_count=0
+    def error(message):
+        nonlocal error_count
+        error_count+=1
+        if len(errors)<1000: errors.append(message[:1024])
     if registration['descriptor_digest']!=digest(canonical(registry.descriptor)): raise ValueError('evaluation descriptor')
     if type(dataset) is not EvaluationDataset: raise ValueError('verified evaluation dataset required')
     if dataset.dataset_digest!=registration['dataset_digest'] or dataset.split!=registration['split'] or dataset.descriptor_digest!=registration['descriptor_digest'] or dataset.build_digest!=registry.build_digest:
@@ -55,7 +60,7 @@ def evaluate(dataset,predictions,registration,registry,*,run_id,artifact_digest,
         if row['dataset_id']!=dataset.dataset_id or row['split']!=registration['split'] or row['sample_id'] in ids: raise ValueError('expected sample framing')
         ids[row['sample_id']]=row
     if len(ids)!=dataset.expected_samples: raise ValueError('evaluation expected sample inventory')
-    if len(ids)<registration['minimum_samples']: errors.append('insufficient support')
+    if len(ids)<registration['minimum_samples']: error('insufficient support')
     for p in predictions:
         try:
             record('prediction',p); sid=p['sample_id'];row=ids.get(sid)
@@ -80,8 +85,9 @@ def evaluate(dataset,predictions,registration,registry,*,run_id,artifact_digest,
                 **{k:row[k] for k in ('specialization_id','specialization_version','task_id','task_version')},
                 payload_schema=row['input_schema'],payload=row['input'],context_ref=None)
             registry.result(p['result'],request,artifact_digest); good.append(p)
-        except (ValueError,KeyError,TypeError) as e: errors.append(str(e))
-    if seen!=set(ids): errors.append('missing prediction')
+        except (ValueError,KeyError,TypeError) as e: error(str(e))
+    if seen!=set(ids): error('missing prediction')
+    if error_count>1000: errors[-1]=str(error_count-999)+' additional evaluation errors omitted'
     metrics=[]
     for ref in registration['metrics']:
         metrics.extend(reducers[(ref['id'],ref['version'],ref['config_digest'])](good))

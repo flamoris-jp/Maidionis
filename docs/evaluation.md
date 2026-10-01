@@ -40,6 +40,13 @@ denominator definition, exclusions and slice identity. Empty accepted sets or
 zero-support classes produce explicit undefined/warning states. Research code
 that returns a convenient zero is adapted at this boundary.
 
+The initial report keeps at most 1,000 error details. Larger failed runs remain
+`invalid_run` with exact expected/observed counts; the last detail records the
+number of omitted errors. Finalization rejects `complete` reports with errors,
+mismatched counts or support below the registration's minimum before publication,
+using the same accounting checks as native bundle validation. Invalid runs can
+still be finalized as explicit research evidence.
+
 Metric eligibility is independent per reducer. On an all-unanswerable Decision
 slice, class metrics are undefined while answerability metrics remain measurable;
 do not discard the whole slice because the source's combined reducer throws.

@@ -210,5 +210,32 @@ class Lifecycle(unittest.TestCase):
         report=dict(self.report,evaluated_component_digest='0'*64)
         with self.assertRaises(ValueError):finalize(self.candidate,self.candidate_digest,self.root/'bad-final',report,self.summary,
             artifact_id='bad',created_at=TIME,model_card=CARD)
+    def test_finalization_rejects_inconsistent_complete_accounting_before_publication(self):
+        cases=[dict(self.report,observed_samples=0),dict(self.report,errors=['failed prediction']),
+               dict(self.report,expected_samples=0,observed_samples=0)]
+        for i,report in enumerate(cases):
+            summary=dict(self.summary,report_digest=digest(canonical(report)))
+            destination=self.root/('bad-complete-'+str(i))
+            with self.assertRaises(ValueError):finalize(self.candidate,self.candidate_digest,destination,report,summary,
+                artifact_id='bad',created_at=TIME,model_card=CARD)
+            self.assertFalse(destination.exists())
+        # A recorded failed run remains publishable as research evidence.
+        report,summary=self.evaluate(self.predictions[:-1]);destination=self.root/'failed-evaluation'
+        h=finalize(self.candidate,self.candidate_digest,destination,report,summary,
+            artifact_id='failed',created_at=TIME,model_card=CARD)
+        run('validate',self.composition,destination,h,'offline_evaluation')
+    def test_export_rejects_mixed_training_registration_and_reserved_evidence(self):
+        changed_config=loads(self.components['model.config.json']);changed_config['dropout_milli']+=1
+        changed=dict(self.components,**{'model.config.json':canonical(changed_config)})
+        cases=[(self.components,dict(self.registration,environment_digest='0'*64)),
+               (self.components,dict(self.registration,selection_scope='dev')),
+               (self.components,dict(self.registration,calibration='required')),
+               (changed,dict(self.registration,evaluated_component_digest=component_digest(changed))),
+               (dict(self.components,**{'evaluation-report.json':canonical(self.report)}),self.registration)]
+        for i,(components,registration) in enumerate(cases):
+            destination=self.root/('mixed-candidate-'+str(i))
+            with self.assertRaises(ValueError):export_candidate(destination,components,self.root/'full',registration,
+                artifact_id='mixed',created_at=TIME,model_card=CARD)
+            self.assertFalse(destination.exists())
 
 if __name__=='__main__':unittest.main()

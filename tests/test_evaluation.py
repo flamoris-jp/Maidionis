@@ -18,6 +18,14 @@ class StatisticalAccounting(unittest.TestCase):
         for x in ([math.nan],[math.inf]):
             with self.assertRaises(ValueError):percentile(x,.5)
 class EvaluationBindings(unittest.TestCase):
+    def test_large_failed_run_keeps_bounded_invalid_report_and_exact_counts(self):
+        predictions=[self.predictions[0]]*1002
+        report,summary=self.assess(predictions=predictions)
+        self.assertEqual(report['status'],'invalid_run');self.assertFalse(summary['passing'])
+        self.assertEqual(report['observed_samples'],1002)
+        self.assertEqual(report['expected_samples'],self.handle.expected_samples)
+        self.assertEqual(len(report['errors']),1000)
+        self.assertIn('omitted',report['errors'][-1])
     @classmethod
     def setUpClass(cls):
         cls.tmp=tempfile.TemporaryDirectory();cls.root=Path(cls.tmp.name)
