@@ -3,7 +3,7 @@
 Status: design inventory, **no implementation/data migration performed**.
 Relative paths refer to the reviewed research tree, not files already shipped in
 public Arbitrium. Public repository coordinates, source revision metadata and
-personal stewardship documents are intentionally absent.
+non-public administrative records are intentionally absent.
 
 ## Four responsibilities
 
@@ -69,7 +69,7 @@ have separate identities. No legacy evidence is rewritten to fit these new rules
 ## Public migration controls
 
 Use new public commits; do not import earlier Git history, author metadata,
-personal attribution/stewardship documents or host-specific instructions.
+non-public administrative metadata or host-specific instructions.
 Read source internally; publish only the reviewed public design and approved
 research content. Scan file text, JSON metadata, examples, comments, PR/Issue
 bodies and commit identity before publication.
@@ -94,7 +94,7 @@ publishing private repository coordinates or personal metadata.
 ## File inventory
 
 The following enumerates every reviewed model/education/contract/test/document/
-dataset/config responsibility. Personal stewardship material is excluded from
+dataset/config responsibility. Non-public administrative material is excluded from
 the public inventory. Repository root instructions/build defaults are assessed
 for replacement, not copied into Core. Dataset payload classifications use their
 manifests, generators and tests; full byte/hash publication verification belongs
