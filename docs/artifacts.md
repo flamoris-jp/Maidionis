@@ -56,15 +56,64 @@ weights, 32 MiB tokenizer, 4 MiB per JSON/schema/config, 30M parameters, 1,000
 members and 1,024-byte relative paths. Check count/shape products for overflow
 and consistency before allocating. Profiles may reduce these limits.
 
-Loader order: trusted registry digest/profile → bounded manifest parse → path/
-inventory/size validation → hash all members and cross-bindings → descriptor/
-schema/component compatibility → compiled construction and trusted CPU archive
-load → exact keys/shapes/dtypes/finiteness → codec control/profile validation →
-eval/no-grad self-check → optional separately qualified device. A failure never
-publishes a partially loaded model. Bundle files must remain immutable throughout
-validation/load; trusted storage locking or a verified bounded snapshot prevents
-hash/load races. Symlinks, traversal, extra/missing files and untrusted archives
-are rejected. Malicious import conversion requires a separate isolated design.
+## Validation, admission and materialization
+
+Core exposes two distinct conceptual operations; names are proposed interfaces,
+not shipped C++ APIs. Their host-independent value types contain no Runtime Jobs,
+grants or scheduler access.
+
+| Operation | Input and result | Forbidden side effects |
+|---|---|---|
+| `validate_bundle(source, validation_context)` | caller-selected immutable source and trusted expected digest/compatibility; bounded metadata, complete hash/cross-binding checks; validated description and compiled resource estimate | no tensor/model construction, archive deserialization or device initialization/move |
+| `materialize_model(validated_bundle, execution_context)` | validated immutable source, frozen compiled registry and caller-admitted placement/budgets/observer; exact constructed model plus allocation receipt, or failure/cleanup record | no admission decision, fallback placement, unrequested device move, hidden cache or published partial model |
+
+Validation CPU buffers, hashing/I/O and any verified snapshot are charged to the
+caller's bounded validation context. Streaming a bundle does not allocate its
+entire contents. Keeping a snapshot resident requires a separate accounted byte
+budget; an immutable source handle/lock survives both stages to prevent hash/load
+races. The validated description binds manifest/descriptor/component digests,
+tensor inventory, required numerical compatibility, maximum input/batch shapes,
+source identity and registry/build identity. Unknown compatibility or missing
+resource estimates fail closed. Sizes from the manifest are not admission grants.
+
+For serving, Runtime reserves CPU RAM and any selected device capacity **before**
+the worker calls materialization; it also owns the validation admission. For
+offline train/export/tests, an explicit bounded offline host supplies the context
+and owns accounting. Core cannot reserve production capacity. `execution_context`
+is an in-process trusted host object, never request JSON: admitted operation ID,
+exact tested numerical/placement profile, persistent and peak transient budgets,
+allocation observation and cleanup hooks. No authority is gained from echoing
+its ID. The host checks current admission before entering Core and before transfer.
+The initial profile selects CPU FP32 only; no optional automatic GPU move exists.
+
+Order after admission: construct registered CPU model → load trusted CPU archive
+→ check exact keys/shapes/dtypes/finiteness → validate codec controls → eval/no-grad
+self-check under an admitted transient budget → return immutable holder/receipt.
+All constructor parameters, weights, tokenizer storage, archive staging, framework
+allocator caches/context overhead and self-check buffers count, including peak
+overlap. The receipt binds operation/artifact/build/profile identities, persistent
+allocations, observed peak/transient use and cleanup status. It is host-reconciled
+observation, not authorization. Do not infer bytes released just from logical
+tensor sizes or a model destructor.
+
+Failure, cancellation, expiry or budget overrun never publishes a holder. Partial
+allocations and persistent framework memory stay charged until actual cleanup is
+acknowledged. The host retains ownership even if the caller stops waiting. A
+qualified allocation observer/bounding mechanism is required: LibTorch allocation
+is not magically controlled by a struct containing a limit. If an in-process
+profile cannot establish the bound/cleanup evidence, that profile cannot be
+admitted; qualify process isolation or another enforcement boundary first.
+Future device/dtype profiles require explicit new admission, compatibility/parity
+and allocation qualification, including simultaneous CPU/device staging. Core
+performs only the placement authorized by that context and never chooses a GPU.
+
+Runtime accepts a successful holder and receipt only under current pins/admission,
+then assumes its sole residency ownership; see the
+[Runtime handoff](runtime-integration.md#loader-handoff). No eagerly constructed
+provider can bypass this sequence. Symlinks, traversal, extra/missing files,
+mutable-source races and untrusted native archives are rejected. These checks
+do not sandbox a native deserializer. Malicious import conversion requires a
+separate isolated design.
 
 ## Checkpoint contract
 

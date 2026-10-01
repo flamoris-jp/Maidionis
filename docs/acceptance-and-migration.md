@@ -35,11 +35,11 @@ in this design PR. Keep each meaningful unit committed and verified promptly.
 | M2 | Maidionis: dependency locks, optional numerical components, batch/codec primitives and neutral objectives | M1; A04–A06, clean CPU build; no Decision label defaults |
 | M3 | Maidionis: deterministic training, structured full checkpoints and selected-best export | M2; A07–A09, same-build resume/crash/identity evidence |
 | M4 | Maidionis: education transport/journal/freeze plus generic verification hooks | M1; A10–A12, no live teacher needed for offline checks |
-| M5 | Maidionis: artifact loader, calibration/statistical primitives and complete evaluation accounting | M2–M4; A13–A16; defined persisted schemas before export |
+| M5 | Maidionis: metadata-only validation and explicit host-context materialization, calibration/statistical primitives and complete evaluation accounting | M2–M4; A13–A16/A23; defined persisted schemas before export |
 | A1 | Arbitrium: immutable sanitized research archive and integrity inventory | may precede Core code; original meaning/digests and disclosure verified |
 | A2 | Arbitrium: Decision descriptor/registration, codec, oracle, heads/objective/gate policies, compiled composition root/offline drivers/provider bridge and legacy adapters | relevant M1–M5 contracts; A17/A22; keep legacy data/readers distinct; Runtime integration deferred to R1 |
 | A3 | Arbitrium: new public-architecture controlled reproduction reports | A1/A2; all seeds/scopes/negative evidence reported separately |
-| R1 | AI Runtime: registered bounded provider integration and explicit resource/control profile | Core/Decision artifacts stable; A18–A20; actual current main rechecked |
+| R1 | AI Runtime and separate specialization bridge: registered bounded provider, admitted loader/holder/receipt handoff and explicit resource/control profile | Core/Decision artifacts stable; A18–A20/A23; actual current main rechecked; qualification before production use |
 
 Schemas, tooling names and build/test commands are documented when real code
 exists. No migration combines changes to all three repositories into one
@@ -71,6 +71,7 @@ claiming Core implementation. No new autonomous education/Drum implementation.
 | A19 | serialized worker, late/cancelled/race losing completion fenced; retained resources drain before release; unsupported controls rejected |
 | A20 | state changes after inference block action; no teacher needed during inference; no Core action/Workflow/global-state authority |
 | A22 | Core and its neutral tests build/link without Arbitrium/Runtime; Arbitrium composition explicitly registers all operations; reject duplicate/missing/unknown compiled bindings; Runtime base builds without Decision code; shared operation/build identity used by train/export/infer |
+| A23 | validation constructs no model/tensor/device context; rejected capacity invokes no materializer; explicit admitted CPU/peak budgets and no automatic device move; failed/expired/stale/overflow loads publish no holder; receipt handoff, retained caches, partial allocation cleanup and exactly-once residency accounting tested with faults; fakes do not qualify real LibTorch bounds |
 
 Tests should exercise production components and deliberate faults, not duplicate
 implementation expressions. Unit fixtures establish numerical/contracts only.

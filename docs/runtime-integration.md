@@ -64,6 +64,43 @@ An eagerly constructed provider holding unaccounted weights is not an allowed
 shortcut. This extension needs its own tests in Runtime; the registered call
 interface alone does not demonstrate production-compatible model lifecycle.
 
+## Loader handoff
+
+The two-stage [Core loader](artifacts.md#validation-admission-and-materialization)
+does not allocate model tensors during validation and has no optional device
+move. R1 must adapt the following sequence to Runtime's actual types; these are
+requirements for the new seam, not claims that current APIs implement it.
+
+1. Runtime admits bounded validation I/O/CPU memory and obtains an immutable,
+   digest-verified description from `validate_bundle`. The provider shell holds
+   no weights. Validation/snapshot/framework-worker baseline memory is accounted.
+2. Runtime checks approved artifact, exact compiled composition/compatibility,
+   qualified resource estimate and chosen placement. It reserves persistent
+   CPU/device capacity plus peak load/self-check staging before creating the
+   worker's `execution_context`. Rejected capacity makes zero materialization calls.
+3. The admitted worker calls `materialize_model` using that context. Core executes
+   model construction/deserialization/self-check; it cannot acquire another lease,
+   move devices or make a hidden cache. Runtime keeps admission/accounting alive
+   until that worker actually stops, including cancelled/expired load attempts.
+4. Runtime validates the receipt against admission/build/artifact/profile and
+   physical allocation observation, rejects overflow or stale/revoked admission,
+   and moves the immutable holder into the Runtime-owned residency entry. This
+   handoff precedes provider activation; only the current lease/pins can attach
+   the holder to a call. Shared storage is counted once; per-call buffers separately.
+5. Failed or rejected handoff closes admission and drains/disposes the unpublished
+   holder. Actual release acknowledgement reconciles allocations; retained caches
+   remain charged. Retirement follows the same stop/drain/release discipline.
+
+The context/receipt Core types are neutral host types, not portable grants;
+Runtime's bridge enforces their association with actual leases and ownership.
+Offline hosts implement their own bounded context without Runtime dependencies.
+CPU RAM needs the same admission/reconciliation as VRAM. Unsupported placement,
+unknown peak bounds or unenforceable allocation limits block admission rather
+than silently reverting to a new device/profile. In-process native construction
+without a qualified bound is not a shortcut to meeting R1.
+
+## Invocation
+
 Invocation input is the bounded Maidionis request, without artifact paths or
 credentials. Runtime's compiler `ValueSchema` is not arbitrary JSON Schema:
 the adapter must construct supported closed schema types, validate all task
