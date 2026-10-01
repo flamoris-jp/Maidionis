@@ -1,6 +1,7 @@
 """Complete prediction accounting; metrics/passing policy supplied explicitly."""
 from .contracts import canonical,digest,record
 from .storage import Journal
+from .datasets import EvaluationDataset
 
 def percentile(values,p):
     import math
@@ -15,11 +16,17 @@ def rate(name,numerator,support,*,slice='all',exclusions=0,denominator='admitted
                 denominator=denominator,exclusions=exclusions,slice=slice,warning=None if support else 'zero_support')
 
 class EvaluationLedger:
-    def __init__(self,root,plan): self.journal=Journal(root,plan)
+    def __init__(self,root,plan):
+        import copy
+        self._plan=copy.deepcopy(record('education-plan',plan))
+        self.journal=Journal(root,self._plan)
     def register(self,registration,plan):
         record('evaluation-registration',registration)
-        if registration['policy_digest']!=plan['evaluation_policy_digest'] or registration['descriptor_digest']!=plan['descriptor_digest'] or registration['environment_digest'] is None:
+        if plan!=self._plan: raise ValueError('evaluation plan substitution')
+        if registration['policy_digest']!=self._plan['evaluation_policy_digest'] or registration['descriptor_digest']!=self._plan['descriptor_digest'] or registration['experiment_id']!=self._plan['experiment_id']:
             raise ValueError('preregistered evaluation policy')
+        if registration['dataset_digest'] not in {ref['digest'] for ref in self._plan['dataset_references']}:
+            raise ValueError('evaluation dataset not in plan')
         old=self.journal.replay('evaluation:registration')
         if old is None: self.journal.commit('registration','evaluation:registration',registration)
         elif old!=registration: raise ValueError('registration is immutable')
@@ -30,10 +37,14 @@ class EvaluationLedger:
         if self.journal.replay('evaluation:access') is not None: raise ValueError('evaluation access already admitted')
         self.journal.commit('access','evaluation:access',dict(registration_digest=h,reason=reason))
 
-def evaluate(rows,predictions,registration,registry,*,run_id,artifact_digest,reducers,passing_policy,baselines=None):
+def evaluate(dataset,predictions,registration,registry,*,run_id,artifact_digest,reducers,passing_policy,baselines=None):
     record('evaluation-registration',registration)
     rh=digest(canonical(registration)); errors=[]; ids={}; seen=set(); good=[]
     if registration['descriptor_digest']!=digest(canonical(registry.descriptor)): raise ValueError('evaluation descriptor')
+    if type(dataset) is not EvaluationDataset: raise ValueError('verified evaluation dataset required')
+    if dataset.dataset_digest!=registration['dataset_digest'] or dataset.split!=registration['split'] or dataset.descriptor_digest!=registration['descriptor_digest'] or dataset.build_digest!=registry.build_digest:
+        raise ValueError('evaluation dataset identity')
+    rows=dataset.rows
     if set(reducers)!={(r['id'],r['version'],r['config_digest']) for r in registration['metrics']}:
         raise ValueError('explicit reducer bindings')
     baselines={} if baselines is None else baselines
@@ -41,8 +52,9 @@ def evaluate(rows,predictions,registration,registry,*,run_id,artifact_digest,red
         raise ValueError('explicit baseline bindings')
     for row in rows:
         registry.sample(row)
-        if row['split']!=registration['split'] or row['sample_id'] in ids: raise ValueError('expected sample framing')
+        if row['dataset_id']!=dataset.dataset_id or row['split']!=registration['split'] or row['sample_id'] in ids: raise ValueError('expected sample framing')
         ids[row['sample_id']]=row
+    if len(ids)!=dataset.expected_samples: raise ValueError('evaluation expected sample inventory')
     if len(ids)<registration['minimum_samples']: errors.append('insufficient support')
     for p in predictions:
         try:
@@ -54,7 +66,7 @@ def evaluate(rows,predictions,registration,registry,*,run_id,artifact_digest,red
                 artifact_digest=artifact_digest,evaluated_component_digest=registration['evaluated_component_digest'],
                 evaluation_registration_digest=rh,selection_scope=registration['selection_scope']).items():
                 if p[k]!=v: raise ValueError('prediction identity')
-            if p['target']!=row['target'] or p['error_status'] is not None or p['result']['status']!='ok': raise ValueError('error/target prediction')
+            if p['target']!=row['target'] or p['error_status'] is not None or p['result']['status'] not in ('ok','abstain'): raise ValueError('error/target prediction')
             if registration['calibration']=='required' and p['calibration_status']!='calibrated': raise ValueError('required calibration')
             if registration['calibration']=='not_applicable' and p['calibration_status'] not in ('not_applicable','uncalibrated'): raise ValueError('calibration claim')
             registry.payload('target_schema',p['target'])

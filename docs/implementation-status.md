@@ -24,6 +24,16 @@ composition source inventory plus build configuration. CMake tracks content
 changes as configure dependencies; a source edit invalidates the build pin.
 The Python composition independently computes the same digest. Compiler/ABI/
 LibTorch compatibility remains a separate exact numerical environment binding.
+Persisted Core schemas are embedded in native binaries; Python package schema
+bytes must match the generated pins included in that build inventory. A schema
+file replacement cannot silently change an existing binary/package contract.
+Shared validation applies sibling constraints after `anyOf` succeeds.
+
+Python evaluation seals a complete verified split into `EvaluationDataset`.
+Registration must match its dataset/descriptor/build/split identities, and the
+original plan must admit its dataset digest. Every expected sample remains in
+accounting, including valid abstentions; metric eligibility and quality policy
+are specialization-owned. These are experimental API changes from bare lists.
 
 ## Reproduce acceptance
 

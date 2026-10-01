@@ -7,6 +7,22 @@ policies belong to the specialization.
 
 ## Prediction accounting
 
+The initial Python evaluator takes an immutable `EvaluationDataset`, created
+only by `evaluation_data(root, trusted_digest, registry, hooks, split=...)` after
+full frozen-tree verification. Its exact dataset, descriptor, build, split,
+sample identities and expected count are sealed. Returned rows are copies;
+neither caller mutations nor later source edits change the evaluated snapshot.
+Bare row lists and partial split substitutions are rejected. The evaluation
+ledger also rejects dataset digests absent from its original education plan.
+This is a whole-split reference API; new slice admissions require an explicit
+contract rather than truncating the expected population in a caller.
+
+Valid `abstain` results count as completed predictions. Specialized reducers
+decide coverage, selective denominators and whether abstention passes their
+policy. A structured error, malformed abstention, missing result or duplicate
+still invalidates the run. The Tiny Beat reducer remains a non-abstaining
+test specialization; a separate neutral regression exercises abstention.
+
 `maidionis.prediction.v1` requires experiment/run/sample/dataset identity and
 digest, split, descriptor/artifact/component digest, selection scope,
 calibration status, model result, target joined outside forward, registered

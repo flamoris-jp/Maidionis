@@ -7,6 +7,38 @@ from .storage import inventory, publish, read, snapshot, writer
 
 SPLITS = ('train', 'dev', 'calibration_fit', 'calibration_select', 'test')
 
+@dataclass(frozen=True, slots=True, init=False)
+class EvaluationDataset:
+    """A whole verified split; callers receive copies, never mutable identity state."""
+    dataset_digest: str
+    dataset_id: str
+    descriptor_digest: str
+    build_digest: str
+    split: str
+    expected_samples: int
+    _row_bytes: tuple
+
+    def __init__(self, *args, **kwargs):
+        raise TypeError('use evaluation_data to verify a frozen dataset')
+
+    @property
+    def rows(self):
+        return tuple(loads(raw,128*1024) for raw in self._row_bytes)
+
+def evaluation_data(root, trusted_digest, registry, hooks, *, split):
+    """Verify the entire frozen tree, then seal all records of the requested split."""
+    if split not in SPLITS: raise ValueError('evaluation split')
+    manifest, rows=validate_dataset(root,trusted_digest,registry,hooks)
+    selected=tuple(canonical(row) for row in rows if row['split']==split)
+    count=manifest['counts'][split]['records']
+    if len(selected)!=count: raise ValueError('evaluation split accounting')
+    handle=object.__new__(EvaluationDataset)
+    for name,value in dict(dataset_digest=trusted_digest,dataset_id=manifest['dataset_id'],
+        descriptor_digest=digest(canonical(registry.descriptor)),build_digest=registry.build_digest,
+        split=split,expected_samples=count,_row_bytes=selected).items():
+        object.__setattr__(handle,name,value)
+    return handle
+
 def split_for(fingerprint, seed):
     validate(fingerprint, {'type':'string', 'pattern':'^[a-f0-9]{64}$'})
     if type(seed) is not int or not 0 <= seed < 2**63: raise ValueError('split seed')

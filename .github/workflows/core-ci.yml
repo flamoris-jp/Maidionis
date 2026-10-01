@@ -32,6 +32,6 @@ jobs:
       - name: Regenerated schemas remain identical
         run: |
           python contracts/generate.py
-          git diff --exit-code -- contracts
+          git diff --exit-code -- contracts education/python/src/maidionis_education/_schema_pins.py
       - name: Numerical dependency is optional
         run: python tools/verify.py --no-numerical --build-dir build-contracts

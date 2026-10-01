@@ -7,7 +7,7 @@ import subprocess
 import tempfile
 import unittest
 from fixture_data import *
-from maidionis_education.datasets import validate_dataset
+from maidionis_education.datasets import validate_dataset,evaluation_data
 from maidionis_education.artifacts import export_components,export_candidate,finalize,component_digest
 from maidionis_education.evaluation import evaluate,rate,EvaluationLedger
 from maidionis_education.contracts import loads
@@ -46,6 +46,7 @@ class Lifecycle(unittest.TestCase):
         cls.data_digest=frozen(cls.dataset)
         cls.manifest,all_rows=validate_dataset(cls.dataset,cls.data_digest,registry(),hooks())
         cls.rows=[r for r in all_rows if r['split']=='train']
+        cls.evaluation_data=evaluation_data(cls.dataset,cls.data_digest,registry(),hooks(),split='train')
         cls.full=run('train',cls.dataset,cls.data_digest,cls.root/'full-checkpoints',cls.root/'full',0,0)
         cls.first=run('train',cls.dataset,cls.data_digest,cls.root/'resumed-checkpoints',cls.root/'first',2,0)
         cls.resumed=run('train',cls.dataset,cls.data_digest,cls.root/'resumed-checkpoints',cls.root/'resumed',0,1)
@@ -91,7 +92,7 @@ class Lifecycle(unittest.TestCase):
         return run('infer',cls.composition,path,digest_value,64*2**20,AS_CAP,persistent,peak,fault)
     @classmethod
     def evaluate(cls,predictions):
-        return evaluate(cls.rows,predictions,cls.registration,registry(),run_id='test:run:1',artifact_digest=cls.candidate_digest,
+        return evaluate(cls.evaluation_data,predictions,cls.registration,registry(),run_id='test:run:1',artifact_digest=cls.candidate_digest,
             reducers=reducers(),passing_policy=lambda report:True)
     def test_real_fresh_process_resume_and_gradient(self):
         self.assertEqual(run('build-identity')['build_digest'],BUILD)
