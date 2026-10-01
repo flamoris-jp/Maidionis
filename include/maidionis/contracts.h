@@ -10,6 +10,7 @@ using Json=nlohmann::json;
 Json parse_json(const std::string&, size_t max_bytes=65536);
 std::string canonical(const Json&);
 std::string sha256(const std::string&);
+std::string compiled_build_digest();
 std::string read_file(const std::filesystem::path&, size_t max_bytes);
 void validate_schema(const Json&,const Json&);
 Json schema(const std::string&);

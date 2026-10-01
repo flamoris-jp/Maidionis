@@ -110,7 +110,8 @@ Batch dense_batch(const std::vector<std::vector<float>>& x,const std::vector<std
 }
 void NumericalComposition::validate() const {TORCH_CHECK(bool(encode)&&bool(objective)&&bool(decode),"missing numerical operation");model_config.validate();TORCH_CHECK(!registry.descriptor().is_null(),"unresolved registry");}
 std::string numerical_environment() {
-  return canonical(Json{{"libtorch",TORCH_VERSION},{"compiler",__VERSION__},{"abi",_GLIBCXX_USE_CXX11_ABI},{"platform","linux.x86_64"},{"dtype","float32"},{"threads",1},{"deterministic",true}});
+  return canonical(Json{{"libtorch",TORCH_VERSION},{"compiler",__VERSION__},{"abi",_GLIBCXX_USE_CXX11_ABI},{"platform","linux.x86_64"},
+    {"build_type",MAIDIONIS_BUILD_TYPE},{"compiler_flags",MAIDIONIS_COMPILER_FLAGS},{"dtype","float32"},{"threads",1},{"deterministic",true}});
 }
 std::string save_model_bytes(ModelPtr m) {torch::serialize::OutputArchive a;m->save(a);std::ostringstream out;a.save_to(out);return out.str();}
 void load_model_bytes(ModelPtr m,const std::string& bytes) {

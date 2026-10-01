@@ -19,6 +19,11 @@ Public APIs are experimental. Descriptor and schema definitions remain compiled
 and explicitly registered; imported records cannot install new executable code.
 Core imports neither Arbitrium nor Runtime. Tiny Beat supplies its own oracle,
 grouping, codecs, heads, objective, metric reducer and passing mechanics policy.
+The compiled build digest hashes the sorted Core/native/Python/schema and test
+composition source inventory plus build configuration. CMake tracks content
+changes as configure dependencies; a source edit invalidates the build pin.
+The Python composition independently computes the same digest. Compiler/ABI/
+LibTorch compatibility remains a separate exact numerical environment binding.
 
 ## Reproduce acceptance
 

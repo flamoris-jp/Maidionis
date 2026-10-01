@@ -5,6 +5,7 @@
 #include <sys/resource.h>
 using namespace maidionis;
 int main(int argc,char** argv){try {
+  if(argc==2&&std::string(argv[1])=="build-identity"){std::cout<<canonical(Json{{"build_digest",compiled_build_digest()}});return 0;}
   if(argc==10&&std::string(argv[1])=="infer"){
     auto c=tinybeat_composition(argv[2]);ValidationContext validation{argv[4],true,"offline_evaluation",size_t(std::stoull(argv[5]))};
     auto bundle=validate_bundle(argv[3],c,validation);

@@ -6,7 +6,7 @@ def config(name, value): return dict(id='test.tiny-beat.'+name,version='1',confi
 GROUP=config('group',{'projection':'energy-position-v1'})
 VERIFY=config('oracle',{'oracle':'kick>=50,snare>=8'})
 GEN=config('generator',{'grid':'energy-0..100-step-10,position-0..15'})
-HOOK=config('dataset-hooks',{'implementation':'test-v1'})
+HOOK=config('dataset-hooks',{'implementation':'test-v1','build_digest':BUILD})
 def oracle(x): return dict(kick=x['energy']>=50,snare=x['beat_position']>=8)
 def hooks():
     return DatasetHooks(HOOK,GROUP,config('dedup',{'projection':'exact-input'}),VERIFY,

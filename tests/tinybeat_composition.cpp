@@ -2,7 +2,7 @@
 using namespace maidionis;
 NumericalComposition tinybeat_composition(const std::filesystem::path& root) {
   auto read=[&](const std::string& file){return parse_json(read_file(root/file,4*1024*1024),4*1024*1024);};
-  auto d=read("descriptor.json");RegistryBuilder builder(sha256("maidionis.test.tiny-beat.composition.v1\n"));
+  auto d=read("descriptor.json");RegistryBuilder builder(compiled_build_digest());
   for(const auto& name:{"input","target","output"})builder.add_schema(d[std::string(name)+"_schema"],read(std::string(name)+".schema.json"));
   for(const auto& name:{"input_codec","output_codec","architecture","objective","numerical_compatibility","head"}) {
     const auto& ref=std::string(name)=="head"?d["heads"][0]:d[name];auto config=read(std::string(name)+".config.json");
@@ -32,7 +32,7 @@ NumericalComposition tinybeat_composition(const std::filesystem::path& root) {
   c.verify_dataset_row=[](const Json& row,const Json& family,const Json& manifest,const Json& config){
     const auto& input=row["input"];Json root={{"scenario",{{"energy",input["energy"]},{"position",input["beat_position"]}}},{"template","grid-v1"}};
     auto ref=[](const std::string& name,const Json& value){return Json{{"id","test.tiny-beat."+name},{"version","1"},{"config_digest",sha256(canonical(value))}};};
-    auto hook=ref("dataset-hooks",Json{{"implementation","test-v1"}}),verify=ref("oracle",Json{{"oracle","kick>=50,snare>=8"}});
+    auto hook=ref("dataset-hooks",Json{{"implementation","test-v1"},{"build_digest",compiled_build_digest()}}),verify=ref("oracle",Json{{"oracle","kick>=50,snare>=8"}});
     auto grouping=ref("group",Json{{"projection","energy-position-v1"}}),dedup=ref("dedup",Json{{"projection","exact-input"}});
     if(family["roots"]!=Json::array({Json{{"digest",sha256(canonical(root))},{"content",root}}})||config["hook"]!=hook||config["grouping"]!=grouping||
        manifest["dedup_profile"]!=dedup||manifest["verification_profile"]!=verify||row["verification_profile"]!=verify||row["supersedes"]!=nullptr||

@@ -1,7 +1,15 @@
 """Test-only composition: synthetic mechanics, never a Drum product."""
 from maidionis_education.contracts import canonical,digest,RegistryBuilder
+from pathlib import Path
 IDENTITY=dict(specialization_id='test.tiny-beat',specialization_version='1',task_id='test.tiny-beat',task_version='1')
-BUILD=digest(b'maidionis.test.tiny-beat.composition.v1\n')
+def code_build_digest(root=None):
+    root=Path(root) if root is not None else Path(__file__).resolve().parents[1]
+    paths=['CMakeLists.txt','tests/tinybeat.py','tests/fixture_data.py','tests/tinybeat_composition.cpp','tests/tinybeat_composition.h']
+    for pattern in ('include/maidionis/*.h','src/**/*.cpp','contracts/*.schema.json','education/python/src/maidionis_education/*.py'):
+        paths.extend(p.relative_to(root).as_posix() for p in root.glob(pattern))
+    raw=b'maidionis-code-build-v1\n'+b''.join((p+'\n'+digest((root/p).read_bytes())+'\n').encode() for p in sorted(paths))
+    return digest(raw)
+BUILD=code_build_digest()
 def object_schema(fields): return dict(type='object',properties=fields,required=list(fields),additionalProperties=False)
 INPUT=object_schema(dict(energy=dict(type='integer',minimum=0,maximum=100),beat_position=dict(type='integer',minimum=0,maximum=15)))
 OUTPUT=object_schema(dict(kick=dict(type='boolean'),snare=dict(type='boolean')))

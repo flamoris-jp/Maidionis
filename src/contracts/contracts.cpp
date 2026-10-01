@@ -8,6 +8,7 @@
 #include <charconv>
 
 namespace maidionis {
+std::string compiled_build_digest(){return MAIDIONIS_BUILD_DIGEST;}
 namespace {
 void require(bool ok,const char* message) { if(!ok) throw std::invalid_argument(message); }
 std::string key(const Json& r) { return r.at("id").get<std::string>()+"\n"+r.at("version").get<std::string>(); }

@@ -94,11 +94,23 @@ class Lifecycle(unittest.TestCase):
         return evaluate(cls.rows,predictions,cls.registration,registry(),run_id='test:run:1',artifact_digest=cls.candidate_digest,
             reducers=reducers(),passing_policy=lambda report:True)
     def test_real_fresh_process_resume_and_gradient(self):
+        self.assertEqual(run('build-identity')['build_digest'],BUILD)
         self.assertGreater(self.full['gradient_l1'],0);self.assertTrue(self.full['parameters_changed'])
         self.assertGreater(self.resumed['gradient_l1'],0)
         for k in ('state','final_sha256','best_sha256','final_logits','best_logits'):
             self.assertEqual(self.full[k],self.resumed[k],k)
         self.assertGreater(self.resumed['state']['global_step'],self.first['state']['global_step'])
+    def test_source_change_invalidates_compiled_build_identity(self):
+        import shutil
+        source=Path(__file__).resolve().parents[1];copy_root=self.root/'identity-source'
+        paths=['CMakeLists.txt','tests/tinybeat.py','tests/fixture_data.py','tests/tinybeat_composition.cpp','tests/tinybeat_composition.h']
+        for pattern in ('include/maidionis/*.h','src/**/*.cpp','contracts/*.schema.json','education/python/src/maidionis_education/*.py'):
+            paths.extend(p.relative_to(source).as_posix() for p in source.glob(pattern))
+        for p in paths:
+            target=copy_root/p;target.parent.mkdir(parents=True,exist_ok=True);shutil.copyfile(source/p,target)
+        self.assertEqual(code_build_digest(copy_root),BUILD)
+        p=copy_root/'src/training/training.cpp';p.write_bytes(p.read_bytes()+b'\n// changed implementation\n')
+        self.assertNotEqual(code_build_digest(copy_root),BUILD)
     def test_archive_inference_and_immutable_finalization(self):
         metadata=run('validate',self.composition,self.candidate,self.candidate_digest,'offline_evaluation')
         self.assertEqual(metadata['model_constructions'],0)
@@ -133,7 +145,7 @@ class Lifecycle(unittest.TestCase):
         self.assertIn(b'budget rejected before constructor',rejected.stderr)
     def test_bundle_mutation_shape_extra_symlink_and_evidence(self):
         import shutil
-        for index,kind in enumerate(('weights','shape','extra','symlink','status','unknown_profile','registration','self_inventory')):
+        for index,kind in enumerate(('weights','shape','extra','symlink','status','unknown_profile','registration','self_inventory','build')):
             root=self.root/('bad:'+str(index));shutil.copytree(self.candidate,root)
             m=loads((root/'manifest.json').read_bytes(),4*2**20)
             if kind=='weights':(root/'weights.pt').write_bytes(b'corrupt')
@@ -143,6 +155,7 @@ class Lifecycle(unittest.TestCase):
             elif kind=='status':m['status']='research_only'
             elif kind=='unknown_profile':m['compatibility']['profile']='unknown'
             elif kind=='registration':m['evidence']['evaluation']['evaluation_registration_digest']='0'*64
+            elif kind=='build':m['compatibility']['build_digest']='0'*64
             else:m['files'].append(dict(path='manifest.json',sha256='0'*64,bytes=1))
             (root/'manifest.json').write_bytes(canonical(m));h=digest(canonical(m))
             run('validate',self.composition,root,h,'offline_evaluation',success=False)
