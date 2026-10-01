@@ -4,8 +4,26 @@ import tempfile
 import unittest
 from fixture_data import *
 from maidionis_education.datasets import validate_dataset,split_for,_validate
+from maidionis_education.storage import inventory
+from maidionis_education.contracts import loads
 
 class Datasets(unittest.TestCase):
+    def test_import_rejects_rehashed_missing_or_substituted_components_and_paths(self):
+        import shutil
+        with tempfile.TemporaryDirectory() as td:
+            source=Path(td)/'source';frozen(source)
+            semantic=DESCRIPTOR['semantic_spec']['path']
+            for i,kind in enumerate(('semantic','input.schema.json','architecture.config.json','descriptor-path','provenance-path','grouping-version')):
+                root=Path(td)/str(i);shutil.copytree(source,root)
+                m=loads((root/'manifest.json').read_bytes(),4*2**20)
+                if kind=='semantic':(root/semantic).unlink()
+                elif kind in ('input.schema.json','architecture.config.json'):(root/kind).write_bytes(b'{}\n')
+                elif kind=='descriptor-path':m['descriptor']['path']='missing.json'
+                elif kind=='provenance-path':m['provenance_index']['path']='missing.json'
+                else:m['split_profile']['grouping_version']='other'
+                files={p.relative_to(root).as_posix():p.read_bytes() for p in root.rglob('*') if p.is_file() and p.name!='manifest.json'}
+                m['files']=inventory(files);raw=canonical(m);(root/'manifest.json').write_bytes(raw)
+                with self.assertRaises(ValueError):validate_dataset(root,digest(raw),registry(),hooks())
     def test_correction_retains_unverified_original_only_in_audit(self):
         rows,proofs=fixture();original=copy.deepcopy(rows[0]);oldproof=copy.deepcopy(proofs[0])
         original['schema_version']='maidionis.audit-ancestor.v1';original['verification_status']='unverified'

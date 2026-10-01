@@ -39,6 +39,11 @@ notes, model confidence or hidden structured oracle facts.
 
 ## Frozen manifest
 
+The initial Python importer rechecks the same descriptor, semantic, schema and
+configuration component bindings enforced at freeze. Rehashing an inventory
+does not admit missing or substituted components. Descriptor/provenance paths
+and grouping version must match the initial frozen layout and registered hooks.
+
 `maidionis.dataset.v1` requires these fields plus `schema_version`:
 
 | Field | Binding |

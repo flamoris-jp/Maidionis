@@ -35,6 +35,13 @@ original plan must admit its dataset digest. Every expected sample remains in
 accounting, including valid abstentions; metric eligibility and quality policy
 are specialization-owned. These are experimental API changes from bare lists.
 
+Native numeric bounds preserve signed/unsigned integer precision. Education
+controllers hold a whole-cycle single-writer lease around budgets and provider
+work. Large failed evaluations retain bounded error details and exact counts;
+finalization rejects inconsistent complete accounting before publication.
+Candidate export cross-binds training/configuration/environment/selection evidence,
+and dataset import rechecks the component bindings enforced during freeze.
+
 ## Reproduce acceptance
 
 Use the README setup and `python tools/verify.py`. This runs production components

@@ -171,6 +171,16 @@ def _counts(samples):
                              verification_support=[dict(id=k,count=v) for k,v in sorted(support.items())])
     return counts
 
+def _check_components(files, registry):
+    descriptor=registry.descriptor
+    if files.get('descriptor.json')!=canonical(descriptor): raise ValueError('descriptor bytes')
+    semantic=descriptor['semantic_spec']
+    if semantic['path'] not in files or digest(files[semantic['path']])!=semantic['sha256']: raise ValueError('semantic component')
+    required=[descriptor[k]['sha256'] for k in ('input_schema','target_schema','output_schema','diagnostics_schema') if descriptor[k] is not None]
+    required += [descriptor[k]['config_digest'] for k in ('input_codec','output_codec','architecture','objective','numerical_compatibility')]
+    required += [r['config_digest'] for r in descriptor['heads']]
+    if not set(required)<={digest(b) for b in files.values()}: raise ValueError('missing bound schema/config component')
+
 def freeze(root, samples, provenance, registry, hooks, component_files, *, dataset_id, seed, created_at, generator,
            license_summary, limitations, purpose='research_fixture', audit_ancestors=(),fault=lambda _:None):
     root = Path(root)
@@ -178,15 +188,7 @@ def freeze(root, samples, provenance, registry, hooks, component_files, *, datas
     if len(samples)+len(audit_ancestors)>1000000:raise ValueError('audit/sample bound')
     families = _validate(samples, provenance, registry, hooks, seed, dataset_id,audit_ancestors)
     files = dict(component_files)
-    if files.get('descriptor.json') != canonical(registry.descriptor): raise ValueError('descriptor bytes')
-    descriptor=registry.descriptor
-    semantic=descriptor['semantic_spec']
-    if semantic['path'] not in files or digest(files[semantic['path']])!=semantic['sha256']: raise ValueError('semantic component')
-    required=[descriptor[k]['sha256'] for k in ('input_schema','target_schema','output_schema','diagnostics_schema') if descriptor[k] is not None]
-    required += [descriptor[k]['config_digest'] for k in ('input_codec','output_codec','architecture','objective','numerical_compatibility')]
-    required += [r['config_digest'] for r in descriptor['heads']]
-    actual={digest(b) for b in files.values()}
-    if not set(required)<=actual: raise ValueError('missing bound schema/config component')
+    _check_components(files,registry)
     if any(name in files for name in ('family-index.json','provenance.jsonl','audit-ancestors.jsonl','split.config.json','manifest.json',*(s+'.jsonl' for s in SPLITS))):
         raise ValueError('reserved dataset member')
     files['family-index.json'] = canonical(families)
@@ -213,6 +215,9 @@ def validate_dataset(root, trusted_digest, registry, hooks):
     raw = read(Path(root)/'manifest.json', 4*2**20)
     if digest(raw) != trusted_digest: raise ValueError('trusted dataset digest')
     m = record('dataset', loads(raw,4*2**20)); files = snapshot(root, m['files'])
+    _check_components(files,registry)
+    if m['descriptor']['path']!='descriptor.json' or m['provenance_index']['path']!='provenance.jsonl' or m['split_profile']['grouping_version']!=hooks.grouping['version']:
+        raise ValueError('dataset metadata path/profile binding')
     if files.get('descriptor.json') != canonical(registry.descriptor) or digest(files['descriptor.json']) != m['descriptor']['sha256']:
         raise ValueError('descriptor binding')
     config = loads(files['split.config.json'])
