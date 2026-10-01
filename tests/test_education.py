@@ -1,0 +1,63 @@
+from pathlib import Path
+import tempfile
+import unittest
+from tinybeat import *
+from fixture_data import VERIFY,HOOK,oracle
+from maidionis_education.education import Controller,EducationHooks,TransportLimits,TransportError,HTTPProvider
+
+def plan():
+    return dict(schema_version='maidionis.education-plan.v1',experiment_id='offline:1',descriptor_digest=digest(canonical(DESCRIPTOR)),
+        hook_identity=HOOK,native_build_digest=BUILD,curriculum_digest=BUILD,prompt_digest=BUILD,providers=[HOOK,HOOK],
+        verification_profile=VERIFY,dataset_references=[],training_config_digest=BUILD,selection_config_digest=BUILD,
+        calibration_config_digest=None,evaluation_policy_digest=BUILD,max_cycles=2,max_attempts=8,max_examples=2,
+        max_elapsed_seconds=60,max_output_bytes=2**20)
+def education_hooks():
+    return EducationHooks(HOOK,BUILD,VERIFY,lambda x:dict(input=x),lambda x:registry().payload('target_schema',x),
+        lambda x,a,b:dict(status='verified' if a==b==oracle(x) else 'unverified',target=a))
+class Fake:
+    identity=HOOK
+    def __init__(self,replies): self.replies=list(replies);self.calls=[]
+    def __call__(self,payload,deadline,cancelled):
+        self.calls.append(payload)
+        v=self.replies.pop(0)
+        if isinstance(v,Exception): raise v
+        return v
+class Education(unittest.TestCase):
+    def test_blind_review_replay_and_no_agreement_auto_verification(self):
+        with tempfile.TemporaryDirectory() as td:
+            x=dict(energy=100,beat_position=15);bad=dict(kick=False,snare=False)
+            a=Fake([canonical(bad)]);b=Fake([canonical(bad)])
+            c=Controller(plan(),education_hooks(),td,a,b)
+            self.assertEqual(c.cycle(0,[x])[0]['status'],'unverified')
+            self.assertEqual(b.calls,[dict(input=x)])
+            a2=Fake([]);b2=Fake([])
+            self.assertEqual(Controller(plan(),education_hooks(),td,a2,b2).cycle(0,[x])[0]['status'],'unverified')
+            self.assertFalse(a2.calls+b2.calls)
+    def test_retries_schema_and_hooks_fail_closed(self):
+        with tempfile.TemporaryDirectory() as td:
+            x=dict(energy=100,beat_position=15);raw=canonical(oracle(x))
+            a=Fake([TransportError('timeout',True),raw]);b=Fake([raw])
+            self.assertEqual(Controller(plan(),education_hooks(),td,a,b).cycle(0,[x])[0]['status'],'verified')
+            self.assertEqual(len(a.calls),2)
+        with tempfile.TemporaryDirectory() as td:
+            a=Fake([b'{"kick":true,"kick":false}']);b=Fake([])
+            with self.assertRaises(TransportError): Controller(plan(),education_hooks(),td,a,b).cycle(0,[x])
+            self.assertEqual(len(a.calls),1)
+        p=plan();p['native_build_digest']='0'*64
+        with self.assertRaises(ValueError): Controller(p,education_hooks(),'unused',Fake([]),Fake([]))
+    def test_bounds_cancel_corrupt_and_uncertain_journal(self):
+        x=dict(energy=100,beat_position=15)
+        with tempfile.TemporaryDirectory() as td:
+            a=Fake([b' '*129000]);c=Controller(plan(),education_hooks(),td,a,Fake([]))
+            with self.assertRaises(TransportError): c.cycle(0,[x])
+            (Path(td)/'events.jsonl').write_bytes(b'{')
+            with self.assertRaises(ValueError): c.journal.replay('x')
+        with tempfile.TemporaryDirectory() as td:
+            a=Fake([]);c=Controller(plan(),education_hooks(),td,a,Fake([]),cancelled=lambda:True)
+            with self.assertRaises(TransportError): c.cycle(0,[x])
+            self.assertFalse(a.calls)
+        for origin in ('http://example.com','https://user:pass@example.com','https://example.com/?key=x'):
+            with self.assertRaises(ValueError): HTTPProvider(origin,remote_opt_in=True)
+        with self.assertRaises(ValueError): HTTPProvider('https://example.com')
+
+if __name__=='__main__': unittest.main()

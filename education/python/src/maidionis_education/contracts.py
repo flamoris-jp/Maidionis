@@ -104,17 +104,21 @@ class RegistryBuilder:
         validate(build_digest,{'type':'string','pattern':'^[a-f0-9]{64}$'})
         self.build_digest=build_digest; self._schemas={}; self._operations={}; self._frozen=False
     def add_schema(self,ref,definition):
+        import copy
         if self._frozen: raise ValueError('registry frozen')
         key=(ref['id'],ref['version'])
         if key in self._schemas or digest(canonical(definition))!=ref['sha256']: raise ValueError('schema binding')
-        self._schemas[key]=(ref.copy(),definition)
+        self._schemas[key]=(copy.deepcopy(ref),copy.deepcopy(definition))
     def add_operation(self,ref,config,operation):
+        import copy
         if self._frozen or not callable(operation): raise ValueError('operation registration')
         key=(ref['id'],ref['version'])
         if key in self._operations or digest(canonical(config))!=ref['config_digest']: raise ValueError('operation binding')
-        self._operations[key]=(ref.copy(),operation)
+        operation(config)
+        self._operations[key]=(copy.deepcopy(ref),operation)
     def freeze(self,descriptor):
         import copy
+        if self._frozen: raise ValueError('registry frozen')
         record('specialization',descriptor)
         for k in ('input_schema','target_schema','output_schema','diagnostics_schema'):
             ref=descriptor[k]
