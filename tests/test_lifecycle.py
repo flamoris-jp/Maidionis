@@ -1,0 +1,241 @@
+"""A21: real native train/resume/export/load/infer/evaluate/finalize, no teacher."""
+import copy
+import os
+from pathlib import Path
+import resource
+import subprocess
+import tempfile
+import unittest
+from fixture_data import *
+from maidionis_education.datasets import validate_dataset,evaluation_data
+from maidionis_education.artifacts import export_components,export_candidate,finalize,component_digest
+from maidionis_education.evaluation import evaluate,rate,EvaluationLedger
+from maidionis_education.contracts import loads
+from maidionis_education.storage import inventory
+from test_education import plan
+
+DRIVER=os.environ.get('MAIDIONIS_TINYBEAT_DRIVER')
+AS_CAP=2*2**30
+POLICY=digest(b'Train-only two-output Bernoulli diagnostic; full accounting; no quality gate v1\n')
+METRIC=config('metrics',{'outputs':['kick','snare'],'reducer':'bernoulli_accuracy_v1'})
+CARD=dict(license='Apache-2.0 synthetic test fixture',intended_use='Offline train-only mechanics verification',
+          limitations=['No held-out generalization or musical quality claim; no production admission.'])
+def reducers():
+    def reduce(rows):
+        return [rate(name+'.accuracy',sum(p['target'][name]==p['result']['payload'][name] for p in rows),len(rows),
+                     denominator='one prediction per admitted train input') for name in ('kick','snare')]
+    return {(METRIC['id'],METRIC['version'],METRIC['config_digest']):reduce}
+def host_limit():
+    resource.setrlimit(resource.RLIMIT_AS,(AS_CAP,AS_CAP))
+    resource.setrlimit(resource.RLIMIT_CPU,(30,30))
+def run(*args, success=True):
+    p=subprocess.run([DRIVER,*map(str,args)],capture_output=True,timeout=35,preexec_fn=host_limit)
+    if success and p.returncode: raise AssertionError(p.stderr.decode(errors='replace'))
+    if not success:
+        if p.returncode==0: raise AssertionError('native rejection expected')
+        if p.stdout: raise AssertionError('failed operation published partial output')
+        return p
+    if len(p.stdout)>4*2**20: raise AssertionError('native output limit')
+    return loads(p.stdout,4*2**20)
+
+@unittest.skipUnless(DRIVER,'native Tiny Beat driver required; run tools/verify.py for acceptance')
+class Lifecycle(unittest.TestCase):
+    @classmethod
+    def setUpClass(cls):
+        cls.tmp=tempfile.TemporaryDirectory();cls.root=Path(cls.tmp.name);cls.dataset=cls.root/'data'
+        cls.data_digest=frozen(cls.dataset)
+        cls.manifest,all_rows=validate_dataset(cls.dataset,cls.data_digest,registry(),hooks())
+        cls.rows=[r for r in all_rows if r['split']=='train']
+        cls.evaluation_data=evaluation_data(cls.dataset,cls.data_digest,registry(),hooks(),split='train')
+        cls.full=run('train',cls.dataset,cls.data_digest,cls.root/'full-checkpoints',cls.root/'full',0,0)
+        cls.first=run('train',cls.dataset,cls.data_digest,cls.root/'resumed-checkpoints',cls.root/'first',2,0)
+        cls.resumed=run('train',cls.dataset,cls.data_digest,cls.root/'resumed-checkpoints',cls.root/'resumed',0,1)
+        cls.components=export_components(component_files(),cls.root/'full')
+        cls.registration=dict(schema_version='maidionis.evaluation-registration.v1',id='test:evaluation:1',version='1',
+            experiment_id='offline:1',policy_digest=POLICY,descriptor_digest=digest(canonical(DESCRIPTOR)),
+            evaluated_component_digest=component_digest(cls.components),dataset_digest=cls.data_digest,split='train',
+            selection_scope='train_diagnostic',metrics=[METRIC],baselines=[],calibration='not_applicable',minimum_samples=1,
+            tolerance=1e-6,environment_digest=cls.full['environment_digest'])
+        cls.registration_digest=digest(canonical(cls.registration));cls.candidate=cls.root/'candidate'
+        p=plan();p['evaluation_policy_digest']=POLICY
+        training=loads((cls.root/'full'/'training.json').read_bytes(),4*2**20)
+        p['training_config_digest']=digest(canonical(training['config']))
+        p['selection_config_digest']=digest(canonical(dict(selection_scope='train_diagnostic',tie='first-improving-epoch')))
+        p['dataset_references']=[dict(id=cls.manifest['dataset_id'],digest=cls.data_digest)]
+        cls.education_plan=p
+        cls.ledger=EvaluationLedger(cls.root/'evaluation-ledger',p)
+        cls.ledger.register(cls.registration,p);cls.ledger.admit(cls.registration,'Train-only synthetic mechanics')
+        cls.candidate_digest=export_candidate(cls.candidate,cls.components,cls.root/'full',cls.registration,
+            artifact_id='test:candidate:1',created_at=TIME,model_card=CARD)
+        cls.composition=cls.root/'composition';cls.composition.mkdir()
+        for p,b in component_files().items():(cls.composition/p).write_bytes(b)
+        requests=[dict(schema_version='maidionis.request.v1',request_id=r['sample_id'],**IDENTITY,payload_schema=ref('input'),
+                       payload=r['input'],context_ref=None) for r in cls.rows]
+        (cls.composition/'inference-inputs.json').write_bytes(canonical(requests))
+        cls.loaded=cls.infer(cls.candidate,cls.candidate_digest)
+        cls.predictions=[]
+        for r,p in zip(cls.rows,cls.loaded['predictions']):
+            cls.predictions.append(dict(schema_version='maidionis.prediction.v1',experiment_id='offline:1',run_id='test:run:1',
+                sample_id=r['sample_id'],dataset_id=r['dataset_id'],dataset_digest=cls.data_digest,split='train',
+                descriptor_digest=cls.registration['descriptor_digest'],artifact_digest=cls.candidate_digest,
+                evaluated_component_digest=cls.registration['evaluated_component_digest'],evaluation_registration_digest=cls.registration_digest,
+                selection_scope='train_diagnostic',calibration_status='not_applicable',result=p['result'],target=r['target'],
+                raw_output_schema=ref('raw'),raw_output=p['raw_output'],timing=dict(elapsed_ns=0,profile='test.mechanics'),error_status=None))
+        cls.report,cls.summary=cls.evaluate(cls.predictions)
+        cls.final=cls.root/'final'
+        cls.final_digest=finalize(cls.candidate,cls.candidate_digest,cls.final,cls.report,cls.summary,
+            artifact_id='test:completed:1',created_at=TIME,model_card=CARD)
+    @classmethod
+    def tearDownClass(cls): cls.tmp.cleanup()
+    @classmethod
+    def infer(cls,path,digest_value,*,persistent=2**20,peak=AS_CAP,fault='none'):
+        return run('infer',cls.composition,path,digest_value,64*2**20,AS_CAP,persistent,peak,fault)
+    @classmethod
+    def evaluate(cls,predictions):
+        return evaluate(cls.evaluation_data,predictions,cls.registration,registry(),run_id='test:run:1',artifact_digest=cls.candidate_digest,
+            reducers=reducers(),passing_policy=lambda report:True)
+    def test_real_fresh_process_resume_and_gradient(self):
+        self.assertEqual(run('build-identity')['build_digest'],BUILD)
+        self.assertGreater(self.full['gradient_l1'],0);self.assertTrue(self.full['parameters_changed'])
+        self.assertGreater(self.resumed['gradient_l1'],0)
+        for k in ('state','final_sha256','best_sha256','final_logits','best_logits'):
+            self.assertEqual(self.full[k],self.resumed[k],k)
+        self.assertGreater(self.resumed['state']['global_step'],self.first['state']['global_step'])
+    def test_source_change_invalidates_compiled_build_identity(self):
+        import shutil
+        source=Path(__file__).resolve().parents[1];copy_root=self.root/'identity-source'
+        paths=['CMakeLists.txt','tests/tinybeat.py','tests/fixture_data.py','tests/tinybeat_composition.cpp','tests/tinybeat_composition.h']
+        for pattern in ('include/maidionis/*.h','src/**/*.cpp','contracts/*.schema.json','education/python/src/maidionis_education/*.py'):
+            paths.extend(p.relative_to(source).as_posix() for p in source.glob(pattern))
+        for p in paths:
+            target=copy_root/p;target.parent.mkdir(parents=True,exist_ok=True);shutil.copyfile(source/p,target)
+        self.assertEqual(code_build_digest(copy_root),BUILD)
+        p=copy_root/'src/training/training.cpp';p.write_bytes(p.read_bytes()+b'\n// changed implementation\n')
+        self.assertNotEqual(code_build_digest(copy_root),BUILD)
+    def test_archive_inference_and_immutable_finalization(self):
+        metadata=run('validate',self.composition,self.candidate,self.candidate_digest,'offline_evaluation')
+        self.assertEqual(metadata['model_constructions'],0)
+        final=self.infer(self.final,self.final_digest)
+        self.assertNotEqual(self.candidate_digest,self.final_digest)
+        self.assertEqual(self.loaded['component_digest'],final['component_digest'])
+        self.assertEqual(self.candidate_digest,digest((self.candidate/'manifest.json').read_bytes()))
+        self.assertEqual(self.report['status'],'complete')
+        for i,(old,new) in enumerate(zip(self.loaded['predictions'],final['predictions'])):
+            for actual,expected in zip(old['raw_output'],self.full['best_logits'][i]):self.assertLessEqual(abs(actual-expected),1e-6)
+            self.assertEqual(old['raw_output'],new['raw_output']);self.assertEqual(old['result']['payload'],new['result']['payload'])
+            self.assertIsNone(old['result']['diagnostics'])
+        receipt=self.loaded['receipt'];self.assertEqual(receipt['process_address_space_cap'],AS_CAP)
+        self.assertGreater(receipt['observed_peak_rss_bytes'],receipt['tensor_bytes'])
+    def test_missing_duplicate_error_wrong_raw_invalidate_complete_accounting(self):
+        cases=[self.predictions[:-1],self.predictions+[self.predictions[0]]]
+        p=copy.deepcopy(self.predictions);p[0]['error_status']='nonfinite';cases.append(p)
+        p=copy.deepcopy(self.predictions);p[0]['raw_output_schema']['sha256']='0'*64;cases.append(p)
+        for p in cases:
+            report,summary=self.evaluate(p);self.assertEqual(report['status'],'invalid_run');self.assertFalse(summary['passing'])
+        for metric in self.report['metrics']:
+            name=metric['name'].split('.')[0]
+            correct=sum(p['target'][name]==p['result']['payload'][name] for p in self.predictions)
+            self.assertEqual(metric['numerator'],correct);self.assertEqual(metric['support'],len(self.rows))
+    def test_loading_faults_capacity_expiry_and_pending_serving_rejected(self):
+        for persistent,peak,fault in [(1,AS_CAP,'none'),(2**20,1,'none'),(2**20,AS_CAP,'expired'),
+            (2**20,AS_CAP,'after_construct'),(2**20,AS_CAP,'after_load'),(2**20,AS_CAP,'before_transfer'),
+            (2**20,AS_CAP,'expire_after_load')]:
+            run('infer',self.composition,self.candidate,self.candidate_digest,64*2**20,AS_CAP,persistent,peak,fault,success=False)
+        run('validate',self.composition,self.candidate,self.candidate_digest,'serving',success=False)
+        rejected=run('infer',self.composition,self.candidate,self.candidate_digest,64*2**20,AS_CAP,1,AS_CAP,'before_construct',success=False)
+        self.assertIn(b'budget rejected before constructor',rejected.stderr)
+    def test_bundle_mutation_shape_extra_symlink_and_evidence(self):
+        import shutil
+        for index,kind in enumerate(('weights','shape','extra','symlink','status','unknown_profile','registration','self_inventory','build')):
+            root=self.root/('bad:'+str(index));shutil.copytree(self.candidate,root)
+            m=loads((root/'manifest.json').read_bytes(),4*2**20)
+            if kind=='weights':(root/'weights.pt').write_bytes(b'corrupt')
+            elif kind=='shape':m['tensor_inventory'][0]['shape'][0]+=1
+            elif kind=='extra':(root/'extra').write_bytes(b'x')
+            elif kind=='symlink':(root/'weights.pt').unlink();(root/'weights.pt').symlink_to(self.candidate/'weights.pt')
+            elif kind=='status':m['status']='research_only'
+            elif kind=='unknown_profile':m['compatibility']['profile']='unknown'
+            elif kind=='registration':m['evidence']['evaluation']['evaluation_registration_digest']='0'*64
+            elif kind=='build':m['compatibility']['build_digest']='0'*64
+            else:m['files'].append(dict(path='manifest.json',sha256='0'*64,bytes=1))
+            (root/'manifest.json').write_bytes(canonical(m));h=digest(canonical(m))
+            run('validate',self.composition,root,h,'offline_evaluation',success=False)
+        changed=self.root/'unknown-schema-composition';shutil.copytree(self.composition,changed)
+        definition=loads((changed/'input.schema.json').read_bytes());definition['properties']['energy']['maximum']=101
+        (changed/'input.schema.json').write_bytes(canonical(definition));descriptor=loads((changed/'descriptor.json').read_bytes())
+        descriptor['input_schema']['sha256']=digest(canonical(definition));(changed/'descriptor.json').write_bytes(canonical(descriptor))
+        run('validate',changed,self.candidate,self.candidate_digest,'offline_evaluation',success=False)
+    def test_every_checkpoint_inventory_member_corruption_rejects_resume(self):
+        import shutil
+        source=self.root/'resumed-checkpoints';pointer=loads((source/'latest.json').read_bytes())
+        m=loads((source/pointer['checkpoint']/'manifest.json').read_bytes(),4*2**20)
+        for i,e in enumerate(m['files']):
+            root=self.root/('corrupt-checkpoint-'+str(i));shutil.copytree(source,root)
+            member=root/pointer['checkpoint']/e['path'];member.write_bytes(member.read_bytes()+b'x')
+            run('train',self.dataset,self.data_digest,root,self.root/('bad-output-'+str(i)),0,1,success=False)
+        bad=self.root/'bad-pointer';shutil.copytree(source,bad)
+        (bad/'latest.json').write_bytes(canonical(dict(checkpoint='../outside',manifest_digest='0'*64)))
+        run('train',self.dataset,self.data_digest,bad,self.root/'bad-pointer-out',0,1,success=False)
+    def test_rehashed_resume_state_cannot_change_schedule_or_parameter_roles(self):
+        import shutil
+        source=self.root/'resumed-checkpoints'
+        for i,mutate in enumerate((lambda s:s['scheduler'].update(phase=0),lambda s:s['parameter_groups'][0].update(decay=.5),
+                                  lambda s:s.update(epoch_order_version='other'),lambda s:s.update(patience_counter=999))):
+            root=self.root/('state-substitution-'+str(i));shutil.copytree(source,root)
+            pointer=loads((root/'latest.json').read_bytes());epoch=root/pointer['checkpoint']
+            state=loads((epoch/'state.json').read_bytes(),4*2**20);mutate(state);(epoch/'state.json').write_bytes(canonical(state))
+            manifest=loads((epoch/'manifest.json').read_bytes(),4*2**20)
+            files={p.relative_to(epoch).as_posix():p.read_bytes() for p in epoch.rglob('*') if p.is_file() and p.name!='manifest.json'}
+            manifest['files']=inventory(files);manifest['state_digest']=digest(files['state.json']);raw=canonical(manifest);(epoch/'manifest.json').write_bytes(raw)
+            pointer['manifest_digest']=digest(raw);(root/'latest.json').write_bytes(canonical(pointer))
+            run('train',self.dataset,self.data_digest,root,self.root/('state-out-'+str(i)),0,1,success=False)
+    def test_actual_training_write_fsync_rename_pointer_failure_keeps_previous_checkpoint(self):
+        import shutil
+        epoch=self.root/'full-checkpoints'/'epoch-1';raw=(epoch/'manifest.json').read_bytes()
+        pointer=canonical(dict(checkpoint='epoch-1',manifest_digest=digest(raw)))
+        for i,fault in enumerate(('write','fsync','directory_fsync','rename','pointer')):
+            root=self.root/('training-fault-'+str(i));root.mkdir();shutil.copytree(epoch,root/'epoch-1');(root/'latest.json').write_bytes(pointer)
+            run('train',self.dataset,self.data_digest,root,self.root/('fault-out-'+str(i)),1,1,fault,success=False)
+            self.assertEqual((root/'latest.json').read_bytes(),pointer);self.assertEqual((root/'epoch-1'/'manifest.json').read_bytes(),raw)
+            # Explicit recovery selects the last published pointer into a new run
+            # root. An orphan is retained rather than silently overwritten.
+            recovered=self.root/('recovery-'+str(i));recovered.mkdir();shutil.copytree(root/'epoch-1',recovered/'epoch-1');(recovered/'latest.json').write_bytes(pointer)
+            result=run('train',self.dataset,self.data_digest,recovered,self.root/('recovery-out-'+str(i)),1,1)
+            self.assertGreater(result['state']['global_step'],loads((epoch/'state.json').read_bytes())['global_step'])
+    def test_preregistration_and_finalization_cannot_substitute_components(self):
+        p=self.education_plan
+        changed=dict(self.registration,policy_digest='0'*64)
+        with self.assertRaises(ValueError):self.ledger.register(changed,p)
+        with self.assertRaises(ValueError):self.ledger.admit(self.registration,'repeat')
+        report=dict(self.report,evaluated_component_digest='0'*64)
+        with self.assertRaises(ValueError):finalize(self.candidate,self.candidate_digest,self.root/'bad-final',report,self.summary,
+            artifact_id='bad',created_at=TIME,model_card=CARD)
+    def test_finalization_rejects_inconsistent_complete_accounting_before_publication(self):
+        cases=[dict(self.report,observed_samples=0),dict(self.report,errors=['failed prediction']),
+               dict(self.report,expected_samples=0,observed_samples=0)]
+        for i,report in enumerate(cases):
+            summary=dict(self.summary,report_digest=digest(canonical(report)))
+            destination=self.root/('bad-complete-'+str(i))
+            with self.assertRaises(ValueError):finalize(self.candidate,self.candidate_digest,destination,report,summary,
+                artifact_id='bad',created_at=TIME,model_card=CARD)
+            self.assertFalse(destination.exists())
+        # A recorded failed run remains publishable as research evidence.
+        report,summary=self.evaluate(self.predictions[:-1]);destination=self.root/'failed-evaluation'
+        h=finalize(self.candidate,self.candidate_digest,destination,report,summary,
+            artifact_id='failed',created_at=TIME,model_card=CARD)
+        run('validate',self.composition,destination,h,'offline_evaluation')
+    def test_export_rejects_mixed_training_registration_and_reserved_evidence(self):
+        changed_config=loads(self.components['model.config.json']);changed_config['dropout_milli']+=1
+        changed=dict(self.components,**{'model.config.json':canonical(changed_config)})
+        cases=[(self.components,dict(self.registration,environment_digest='0'*64)),
+               (self.components,dict(self.registration,selection_scope='dev')),
+               (self.components,dict(self.registration,calibration='required')),
+               (changed,dict(self.registration,evaluated_component_digest=component_digest(changed))),
+               (dict(self.components,**{'evaluation-report.json':canonical(self.report)}),self.registration)]
+        for i,(components,registration) in enumerate(cases):
+            destination=self.root/('mixed-candidate-'+str(i))
+            with self.assertRaises(ValueError):export_candidate(destination,components,self.root/'full',registration,
+                artifact_id='mixed',created_at=TIME,model_card=CARD)
+            self.assertFalse(destination.exists())
+
+if __name__=='__main__':unittest.main()

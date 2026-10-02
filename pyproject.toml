@@ -1,0 +1,18 @@
+[build-system]
+requires = ["setuptools>=75"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "maidionis-education"
+version = "0.1.0"
+description = "Bounded offline education and integrity contracts for Maidionis"
+requires-python = ">=3.11"
+dependencies = []
+license = {text = "Apache-2.0"}
+
+[tool.setuptools]
+package-dir = {maidionis_education = "education/python/src/maidionis_education", maidionis_contracts = "contracts"}
+packages = ["maidionis_education", "maidionis_contracts"]
+
+[tool.setuptools.package-data]
+maidionis_contracts = ["*.schema.json"]

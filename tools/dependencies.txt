@@ -1,0 +1,9 @@
+# Tested Linux x86_64 CPU profile. Torch is used only as the LibTorch distribution.
+--extra-index-url https://download.pytorch.org/whl/cpu
+torch==2.5.1+cpu
+cmake==3.31.6
+ninja==1.11.1.4
+nlohmann_json==3.11.3
+jsonschema==4.23.0
+setuptools==84.0.0
+wheel==0.48.0

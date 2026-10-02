@@ -1,0 +1,46 @@
+{
+  "$id": "maidionis.evaluation-summary.v1",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "evaluated_component_digest": {
+      "maxLength": 64,
+      "minLength": 1,
+      "pattern": "^[a-f0-9]{64}$",
+      "type": "string"
+    },
+    "evaluation_registration_digest": {
+      "maxLength": 64,
+      "minLength": 1,
+      "pattern": "^[a-f0-9]{64}$",
+      "type": "string"
+    },
+    "passing": {
+      "type": "boolean"
+    },
+    "report_digest": {
+      "maxLength": 64,
+      "minLength": 1,
+      "pattern": "^[a-f0-9]{64}$",
+      "type": "string"
+    },
+    "schema_version": {
+      "const": "maidionis.evaluation-summary.v1"
+    },
+    "status": {
+      "enum": [
+        "complete",
+        "invalid_run"
+      ]
+    }
+  },
+  "required": [
+    "schema_version",
+    "report_digest",
+    "evaluation_registration_digest",
+    "evaluated_component_digest",
+    "status",
+    "passing"
+  ],
+  "type": "object"
+}

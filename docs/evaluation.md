@@ -1,9 +1,27 @@
 # Evaluation and calibration contracts
 
+See [implementation status](implementation-status.md) for the initial implemented CPU profile and deferred qualifications. The reviewed boundary below includes broader profiles.
+
 Status: proposed v1. Numerical primitives are reusable; task metrics and release
 policies belong to the specialization.
 
 ## Prediction accounting
+
+The initial Python evaluator takes an immutable `EvaluationDataset`, created
+only by `evaluation_data(root, trusted_digest, registry, hooks, split=...)` after
+full frozen-tree verification. Its exact dataset, descriptor, build, split,
+sample identities and expected count are sealed. Returned rows are copies;
+neither caller mutations nor later source edits change the evaluated snapshot.
+Bare row lists and partial split substitutions are rejected. The evaluation
+ledger also rejects dataset digests absent from its original education plan.
+This is a whole-split reference API; new slice admissions require an explicit
+contract rather than truncating the expected population in a caller.
+
+Valid `abstain` results count as completed predictions. Specialized reducers
+decide coverage, selective denominators and whether abstention passes their
+policy. A structured error, malformed abstention, missing result or duplicate
+still invalidates the run. The Tiny Beat reducer remains a non-abstaining
+test specialization; a separate neutral regression exercises abstention.
 
 `maidionis.prediction.v1` requires experiment/run/sample/dataset identity and
 digest, split, descriptor/artifact/component digest, selection scope,
@@ -21,6 +39,13 @@ Every metric stores name/version, value or explicit null, numerator/support,
 denominator definition, exclusions and slice identity. Empty accepted sets or
 zero-support classes produce explicit undefined/warning states. Research code
 that returns a convenient zero is adapted at this boundary.
+
+The initial report keeps at most 1,000 error details. Larger failed runs remain
+`invalid_run` with exact expected/observed counts; the last detail records the
+number of omitted errors. Finalization rejects `complete` reports with errors,
+mismatched counts or support below the registration's minimum before publication,
+using the same accounting checks as native bundle validation. Invalid runs can
+still be finalized as explicit research evidence.
 
 Metric eligibility is independent per reducer. On an all-unanswerable Decision
 slice, class metrics are undefined while answerability metrics remain measurable;

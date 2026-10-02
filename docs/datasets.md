@@ -1,5 +1,7 @@
 # Dataset, manifest and provenance contract
 
+See [implementation status](implementation-status.md) for the initial implemented CPU profile and deferred qualifications. The reviewed boundary below includes broader profiles.
+
 Status: proposed v1. Historical Decision data remains in Arbitrium.
 
 ## Sample and provenance separation
@@ -36,6 +38,11 @@ Model inputs never contain targets, final-label source, rationale, reviewer
 notes, model confidence or hidden structured oracle facts.
 
 ## Frozen manifest
+
+The initial Python importer rechecks the same descriptor, semantic, schema and
+configuration component bindings enforced at freeze. Rehashing an inventory
+does not admit missing or substituted components. Descriptor/provenance paths
+and grouping version must match the initial frozen layout and registered hooks.
 
 `maidionis.dataset.v1` requires these fields plus `schema_version`:
 

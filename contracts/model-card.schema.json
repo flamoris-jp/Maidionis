@@ -1,0 +1,49 @@
+{
+  "$id": "maidionis.model-card.v1",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "component_digest": {
+      "maxLength": 64,
+      "minLength": 1,
+      "pattern": "^[a-f0-9]{64}$",
+      "type": "string"
+    },
+    "intended_use": {
+      "maxLength": 4096,
+      "minLength": 1,
+      "type": "string"
+    },
+    "license": {
+      "maxLength": 4096,
+      "minLength": 1,
+      "type": "string"
+    },
+    "limitations": {
+      "items": {
+        "maxLength": 4096,
+        "minLength": 1,
+        "type": "string"
+      },
+      "maxItems": 32,
+      "minItems": 1,
+      "type": "array",
+      "uniqueItems": false
+    },
+    "status": {
+      "enum": [
+        "research_candidate",
+        "research_only",
+        "release_candidate"
+      ]
+    }
+  },
+  "required": [
+    "status",
+    "component_digest",
+    "license",
+    "intended_use",
+    "limitations"
+  ],
+  "type": "object"
+}

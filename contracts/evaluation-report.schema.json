@@ -1,0 +1,210 @@
+{
+  "$id": "maidionis.evaluation-report.v1",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "artifact_digest": {
+      "maxLength": 64,
+      "minLength": 1,
+      "pattern": "^[a-f0-9]{64}$",
+      "type": "string"
+    },
+    "dataset_digest": {
+      "maxLength": 64,
+      "minLength": 1,
+      "pattern": "^[a-f0-9]{64}$",
+      "type": "string"
+    },
+    "descriptor_digest": {
+      "maxLength": 64,
+      "minLength": 1,
+      "pattern": "^[a-f0-9]{64}$",
+      "type": "string"
+    },
+    "errors": {
+      "items": {
+        "maxLength": 1024,
+        "minLength": 1,
+        "type": "string"
+      },
+      "maxItems": 1000,
+      "minItems": 0,
+      "type": "array",
+      "uniqueItems": false
+    },
+    "evaluated_component_digest": {
+      "maxLength": 64,
+      "minLength": 1,
+      "pattern": "^[a-f0-9]{64}$",
+      "type": "string"
+    },
+    "evaluation_registration_digest": {
+      "maxLength": 64,
+      "minLength": 1,
+      "pattern": "^[a-f0-9]{64}$",
+      "type": "string"
+    },
+    "expected_samples": {
+      "maximum": 9223372036854775807,
+      "minimum": 0,
+      "type": "integer"
+    },
+    "experiment_id": {
+      "maxLength": 128,
+      "minLength": 1,
+      "pattern": "^[A-Za-z0-9._:-]{1,128}$",
+      "type": "string"
+    },
+    "limitations": {
+      "items": {
+        "maxLength": 4096,
+        "minLength": 1,
+        "type": "string"
+      },
+      "maxItems": 32,
+      "minItems": 0,
+      "type": "array",
+      "uniqueItems": false
+    },
+    "metrics": {
+      "items": {
+        "additionalProperties": false,
+        "properties": {
+          "denominator": {
+            "maxLength": 256,
+            "minLength": 1,
+            "type": "string"
+          },
+          "exclusions": {
+            "maximum": 9223372036854775807,
+            "minimum": 0,
+            "type": "integer"
+          },
+          "name": {
+            "maxLength": 128,
+            "minLength": 1,
+            "pattern": "^[A-Za-z0-9._:-]{1,128}$",
+            "type": "string"
+          },
+          "numerator": {
+            "maximum": 1e+30,
+            "minimum": 0,
+            "type": "number"
+          },
+          "slice": {
+            "maxLength": 128,
+            "minLength": 1,
+            "pattern": "^[A-Za-z0-9._:-]{1,128}$",
+            "type": "string"
+          },
+          "support": {
+            "maximum": 9223372036854775807,
+            "minimum": 0,
+            "type": "integer"
+          },
+          "value": {
+            "anyOf": [
+              {
+                "type": "null"
+              },
+              {
+                "maximum": 1e+30,
+                "minimum": -1e+30,
+                "type": "number"
+              }
+            ]
+          },
+          "version": {
+            "maxLength": 128,
+            "minLength": 1,
+            "pattern": "^[A-Za-z0-9._:-]{1,128}$",
+            "type": "string"
+          },
+          "warning": {
+            "anyOf": [
+              {
+                "type": "null"
+              },
+              {
+                "maxLength": 128,
+                "minLength": 1,
+                "pattern": "^[A-Za-z0-9._:-]{1,128}$",
+                "type": "string"
+              }
+            ]
+          }
+        },
+        "required": [
+          "name",
+          "version",
+          "value",
+          "numerator",
+          "support",
+          "denominator",
+          "exclusions",
+          "slice",
+          "warning"
+        ],
+        "type": "object"
+      },
+      "maxItems": 1000,
+      "minItems": 0,
+      "type": "array",
+      "uniqueItems": false
+    },
+    "observed_samples": {
+      "maximum": 9223372036854775807,
+      "minimum": 0,
+      "type": "integer"
+    },
+    "run_id": {
+      "maxLength": 128,
+      "minLength": 1,
+      "pattern": "^[A-Za-z0-9._:-]{1,128}$",
+      "type": "string"
+    },
+    "schema_version": {
+      "const": "maidionis.evaluation-report.v1"
+    },
+    "selection_scope": {
+      "enum": [
+        "dev",
+        "train_diagnostic"
+      ]
+    },
+    "split": {
+      "enum": [
+        "train",
+        "dev",
+        "calibration_fit",
+        "calibration_select",
+        "test"
+      ]
+    },
+    "status": {
+      "enum": [
+        "complete",
+        "invalid_run"
+      ]
+    }
+  },
+  "required": [
+    "schema_version",
+    "experiment_id",
+    "run_id",
+    "descriptor_digest",
+    "evaluated_component_digest",
+    "evaluation_registration_digest",
+    "dataset_digest",
+    "artifact_digest",
+    "split",
+    "selection_scope",
+    "status",
+    "expected_samples",
+    "observed_samples",
+    "errors",
+    "metrics",
+    "limitations"
+  ],
+  "type": "object"
+}

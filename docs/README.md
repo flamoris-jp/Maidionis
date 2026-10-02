@@ -45,3 +45,7 @@ Public authority references:
 Runtime links pin the public revision inspected for this proposal. Recheck its
 current main before implementing the adapter; these links are not a live-state
 or deployment claim.
+
+## Initial implementation
+
+Core M1–M5 now has an initial offline CPU reference implementation. See [implementation status and acceptance](implementation-status.md) for actual commands, evidence, limitations and deferred Arbitrium/Runtime work. The design documents retain broader requirements; they are not independent proof that every profile is qualified.

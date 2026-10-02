@@ -1,0 +1,206 @@
+{
+  "$id": "maidionis.training-state.v1",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "best_epoch": {
+      "maximum": 9223372036854775807,
+      "minimum": 0,
+      "type": "integer"
+    },
+    "best_objective": {
+      "maximum": 1e+30,
+      "minimum": 0,
+      "type": "number"
+    },
+    "best_weights_digest": {
+      "maxLength": 64,
+      "minLength": 1,
+      "pattern": "^[a-f0-9]{64}$",
+      "type": "string"
+    },
+    "completed_epoch": {
+      "maximum": 9223372036854775807,
+      "minimum": 0,
+      "type": "integer"
+    },
+    "epoch_order_version": {
+      "maxLength": 128,
+      "minLength": 1,
+      "pattern": "^[A-Za-z0-9._:-]{1,128}$",
+      "type": "string"
+    },
+    "global_step": {
+      "maximum": 9223372036854775807,
+      "minimum": 0,
+      "type": "integer"
+    },
+    "history": {
+      "items": {
+        "additionalProperties": false,
+        "properties": {
+          "epoch": {
+            "maximum": 9223372036854775807,
+            "minimum": 0,
+            "type": "integer"
+          },
+          "improved": {
+            "type": "boolean"
+          },
+          "loss": {
+            "maximum": 1e+30,
+            "minimum": 0,
+            "type": "number"
+          },
+          "lr": {
+            "maximum": 1,
+            "minimum": 0,
+            "type": "number"
+          },
+          "objective": {
+            "maximum": 1e+30,
+            "minimum": 0,
+            "type": "number"
+          },
+          "step": {
+            "maximum": 9223372036854775807,
+            "minimum": 0,
+            "type": "integer"
+          }
+        },
+        "required": [
+          "epoch",
+          "step",
+          "loss",
+          "objective",
+          "lr",
+          "improved"
+        ],
+        "type": "object"
+      },
+      "maxItems": 10000,
+      "minItems": 1,
+      "type": "array",
+      "uniqueItems": false
+    },
+    "next_epoch": {
+      "maximum": 9223372036854775807,
+      "minimum": 0,
+      "type": "integer"
+    },
+    "parameter_groups": {
+      "items": {
+        "additionalProperties": false,
+        "properties": {
+          "decay": {
+            "maximum": 1,
+            "minimum": 0,
+            "type": "number"
+          },
+          "name": {
+            "maxLength": 128,
+            "minLength": 1,
+            "pattern": "^[A-Za-z0-9._:-]{1,128}$",
+            "type": "string"
+          }
+        },
+        "required": [
+          "name",
+          "decay"
+        ],
+        "type": "object"
+      },
+      "maxItems": 100000,
+      "minItems": 1,
+      "type": "array",
+      "uniqueItems": false
+    },
+    "patience_counter": {
+      "maximum": 9223372036854775807,
+      "minimum": 0,
+      "type": "integer"
+    },
+    "planned_total_steps": {
+      "maximum": 9223372036854775807,
+      "minimum": 1,
+      "type": "integer"
+    },
+    "rng_inventory": {
+      "items": {
+        "maxLength": 1024,
+        "minLength": 1,
+        "pattern": "^[A-Za-z0-9_-][A-Za-z0-9._/-]*$",
+        "type": "string"
+      },
+      "maxItems": 8,
+      "minItems": 1,
+      "type": "array",
+      "uniqueItems": false
+    },
+    "scheduler": {
+      "additionalProperties": false,
+      "properties": {
+        "base_lr": {
+          "maximum": 1,
+          "minimum": 1e-12,
+          "type": "number"
+        },
+        "id": {
+          "maxLength": 128,
+          "minLength": 1,
+          "pattern": "^[A-Za-z0-9._:-]{1,128}$",
+          "type": "string"
+        },
+        "phase": {
+          "maximum": 9223372036854775807,
+          "minimum": 0,
+          "type": "integer"
+        },
+        "version": {
+          "maxLength": 128,
+          "minLength": 1,
+          "pattern": "^[A-Za-z0-9._:-]{1,128}$",
+          "type": "string"
+        }
+      },
+      "required": [
+        "id",
+        "version",
+        "phase",
+        "base_lr"
+      ],
+      "type": "object"
+    },
+    "schema_version": {
+      "const": "maidionis.training-state.v1"
+    },
+    "selection_scope": {
+      "enum": [
+        "dev",
+        "train_diagnostic"
+      ]
+    },
+    "stopped": {
+      "type": "boolean"
+    }
+  },
+  "required": [
+    "schema_version",
+    "completed_epoch",
+    "next_epoch",
+    "global_step",
+    "planned_total_steps",
+    "scheduler",
+    "parameter_groups",
+    "best_objective",
+    "best_epoch",
+    "best_weights_digest",
+    "patience_counter",
+    "stopped",
+    "selection_scope",
+    "epoch_order_version",
+    "rng_inventory",
+    "history"
+  ],
+  "type": "object"
+}

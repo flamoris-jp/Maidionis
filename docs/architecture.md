@@ -1,5 +1,7 @@
 # Architecture and ownership
 
+See [implementation status](implementation-status.md) for the initial implemented CPU profile and deferred qualifications. The reviewed boundary below includes broader profiles.
+
 Status: proposed v1; see the [design index](README.md).
 
 ## One authority per responsibility

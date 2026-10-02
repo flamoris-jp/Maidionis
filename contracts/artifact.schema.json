@@ -1,0 +1,344 @@
+{
+  "$id": "maidionis.artifact.v1",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "artifact_id": {
+      "maxLength": 128,
+      "minLength": 1,
+      "pattern": "^[A-Za-z0-9._:-]{1,128}$",
+      "type": "string"
+    },
+    "compatibility": {
+      "additionalProperties": false,
+      "properties": {
+        "build_digest": {
+          "maxLength": 64,
+          "minLength": 1,
+          "pattern": "^[a-f0-9]{64}$",
+          "type": "string"
+        },
+        "compiler_abi": {
+          "maxLength": 128,
+          "minLength": 1,
+          "pattern": "^[A-Za-z0-9._:-]{1,128}$",
+          "type": "string"
+        },
+        "dtype": {
+          "enum": [
+            "float32"
+          ]
+        },
+        "libtorch": {
+          "maxLength": 128,
+          "minLength": 1,
+          "pattern": "^[A-Za-z0-9._:-]{1,128}$",
+          "type": "string"
+        },
+        "platform": {
+          "maxLength": 128,
+          "minLength": 1,
+          "pattern": "^[A-Za-z0-9._:-]{1,128}$",
+          "type": "string"
+        },
+        "profile": {
+          "maxLength": 128,
+          "minLength": 1,
+          "pattern": "^[A-Za-z0-9._:-]{1,128}$",
+          "type": "string"
+        }
+      },
+      "required": [
+        "profile",
+        "build_digest",
+        "libtorch",
+        "compiler_abi",
+        "platform",
+        "dtype"
+      ],
+      "type": "object"
+    },
+    "created_at": {
+      "maxLength": 32,
+      "minLength": 1,
+      "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}(\\.[0-9]{1,6})?Z$",
+      "type": "string"
+    },
+    "descriptor_digest": {
+      "maxLength": 64,
+      "minLength": 1,
+      "pattern": "^[a-f0-9]{64}$",
+      "type": "string"
+    },
+    "evidence": {
+      "additionalProperties": false,
+      "properties": {
+        "calibration": {
+          "anyOf": [
+            {
+              "additionalProperties": false,
+              "properties": {
+                "state": {
+                  "enum": [
+                    "not_applicable"
+                  ]
+                }
+              },
+              "required": [
+                "state"
+              ],
+              "type": "object"
+            },
+            {
+              "additionalProperties": false,
+              "properties": {
+                "record_digest": {
+                  "maxLength": 64,
+                  "minLength": 1,
+                  "pattern": "^[a-f0-9]{64}$",
+                  "type": "string"
+                },
+                "state": {
+                  "enum": [
+                    "completed"
+                  ]
+                }
+              },
+              "required": [
+                "state",
+                "record_digest"
+              ],
+              "type": "object"
+            }
+          ]
+        },
+        "evaluation": {
+          "anyOf": [
+            {
+              "additionalProperties": false,
+              "properties": {
+                "evaluated_component_digest": {
+                  "maxLength": 64,
+                  "minLength": 1,
+                  "pattern": "^[a-f0-9]{64}$",
+                  "type": "string"
+                },
+                "evaluation_registration_digest": {
+                  "maxLength": 64,
+                  "minLength": 1,
+                  "pattern": "^[a-f0-9]{64}$",
+                  "type": "string"
+                },
+                "state": {
+                  "enum": [
+                    "pending"
+                  ]
+                }
+              },
+              "required": [
+                "state",
+                "evaluation_registration_digest",
+                "evaluated_component_digest"
+              ],
+              "type": "object"
+            },
+            {
+              "additionalProperties": false,
+              "properties": {
+                "evaluated_component_digest": {
+                  "maxLength": 64,
+                  "minLength": 1,
+                  "pattern": "^[a-f0-9]{64}$",
+                  "type": "string"
+                },
+                "evaluation_registration_digest": {
+                  "maxLength": 64,
+                  "minLength": 1,
+                  "pattern": "^[a-f0-9]{64}$",
+                  "type": "string"
+                },
+                "report_digest": {
+                  "maxLength": 64,
+                  "minLength": 1,
+                  "pattern": "^[a-f0-9]{64}$",
+                  "type": "string"
+                },
+                "state": {
+                  "enum": [
+                    "completed"
+                  ]
+                },
+                "summary_digest": {
+                  "maxLength": 64,
+                  "minLength": 1,
+                  "pattern": "^[a-f0-9]{64}$",
+                  "type": "string"
+                }
+              },
+              "required": [
+                "state",
+                "evaluation_registration_digest",
+                "evaluated_component_digest",
+                "report_digest",
+                "summary_digest"
+              ],
+              "type": "object"
+            }
+          ]
+        },
+        "training_digest": {
+          "maxLength": 64,
+          "minLength": 1,
+          "pattern": "^[a-f0-9]{64}$",
+          "type": "string"
+        }
+      },
+      "required": [
+        "training_digest",
+        "calibration",
+        "evaluation"
+      ],
+      "type": "object"
+    },
+    "files": {
+      "items": {
+        "additionalProperties": false,
+        "properties": {
+          "bytes": {
+            "maximum": 1073741824,
+            "minimum": 0,
+            "type": "integer"
+          },
+          "path": {
+            "maxLength": 1024,
+            "minLength": 1,
+            "pattern": "^[A-Za-z0-9_-][A-Za-z0-9._/-]*$",
+            "type": "string"
+          },
+          "sha256": {
+            "maxLength": 64,
+            "minLength": 1,
+            "pattern": "^[a-f0-9]{64}$",
+            "type": "string"
+          }
+        },
+        "required": [
+          "path",
+          "sha256",
+          "bytes"
+        ],
+        "type": "object"
+      },
+      "maxItems": 1000,
+      "minItems": 0,
+      "type": "array",
+      "uniqueItems": false
+    },
+    "format_version": {
+      "const": 1
+    },
+    "limits": {
+      "additionalProperties": false,
+      "properties": {
+        "max_batch": {
+          "maximum": 64,
+          "minimum": 1,
+          "type": "integer"
+        },
+        "max_input_bytes": {
+          "maximum": 65536,
+          "minimum": 1,
+          "type": "integer"
+        },
+        "parameters": {
+          "maximum": 30000000,
+          "minimum": 1,
+          "type": "integer"
+        }
+      },
+      "required": [
+        "max_batch",
+        "max_input_bytes",
+        "parameters"
+      ],
+      "type": "object"
+    },
+    "schema_version": {
+      "const": "maidionis.artifact.v1"
+    },
+    "status": {
+      "enum": [
+        "research_candidate",
+        "research_only",
+        "release_candidate"
+      ]
+    },
+    "tensor_inventory": {
+      "items": {
+        "additionalProperties": false,
+        "properties": {
+          "dtype": {
+            "enum": [
+              "float32"
+            ]
+          },
+          "name": {
+            "maxLength": 128,
+            "minLength": 1,
+            "pattern": "^[A-Za-z0-9._:-]{1,128}$",
+            "type": "string"
+          },
+          "role": {
+            "enum": [
+              "parameter",
+              "buffer"
+            ]
+          },
+          "shape": {
+            "items": {
+              "maximum": 30000000,
+              "minimum": 1,
+              "type": "integer"
+            },
+            "maxItems": 8,
+            "minItems": 1,
+            "type": "array",
+            "uniqueItems": false
+          }
+        },
+        "required": [
+          "name",
+          "dtype",
+          "shape",
+          "role"
+        ],
+        "type": "object"
+      },
+      "maxItems": 1000,
+      "minItems": 0,
+      "type": "array",
+      "uniqueItems": false
+    },
+    "training_run_id": {
+      "maxLength": 128,
+      "minLength": 1,
+      "pattern": "^[A-Za-z0-9._:-]{1,128}$",
+      "type": "string"
+    }
+  },
+  "required": [
+    "schema_version",
+    "format_version",
+    "artifact_id",
+    "created_at",
+    "descriptor_digest",
+    "training_run_id",
+    "status",
+    "files",
+    "compatibility",
+    "tensor_inventory",
+    "limits",
+    "evidence"
+  ],
+  "type": "object"
+}

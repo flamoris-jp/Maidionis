@@ -1,5 +1,7 @@
 # Education and native training
 
+See [implementation status](implementation-status.md) for the initial implemented CPU profile and deferred qualifications. The reviewed boundary below includes broader profiles.
+
 Status: proposed v1. Education is finite offline work; inference never teaches itself.
 
 ## Candidate review and provider contracts
@@ -67,6 +69,11 @@ Single-writer journal, immutable content-addressed response records and durable
 stage outputs support restart. Reject corrupt/partially committed journal
 entries; recovery is explicit. Journal durability does not prove remote work
 was never attempted or give exactly-once provider behavior.
+
+The initial controller holds an exclusive experiment lease for the entire
+cycle, including budget checks, provider calls and adjudication. Another
+controller targeting the same journal fails before remote work; releasing
+the lease after success or failure allows replay or explicit recovery.
 
 The plan fixes evaluation policy before candidate selection. The final
 `EvaluationRegistration` adds the exact selected component/calibration/data

@@ -48,9 +48,9 @@ Those responsibilities belong to the surrounding Runtime, applications, and othe
 
 ### Current status / 現在の状態
 
-**Bootstrap / architecture design.**
+**Initial Core M1–M5 implementation, with offline CPU acceptance.**
 
-The repository is being established from controlled Arbitrium research. The reusable Core boundary, specialization interface, migration map, and Runtime adapter contract are being defined in [Issue #1](https://github.com/flamoris-jp/Maidionis/issues/1).
+The reviewed Core boundary in [Issue #1](https://github.com/flamoris-jp/Maidionis/issues/1) now has shared strict schemas, explicit registries, native numerical/training/checkpoint components, bounded Python education and family freeze, and immutable offline artifact/evaluation components. [Issue #4](https://github.com/flamoris-jp/Maidionis/issues/4) covers this first implementation. See the [implementation status and acceptance evidence](docs/implementation-status.md).
 
 No production-ready Maidionis model, stable artifact format, or Runtime integration is claimed yet.
 
@@ -119,7 +119,7 @@ The Arbitrium research prototype currently uses:
 - **C++20 / CMake / LibTorch** for model architecture, native training, calibration, and inference
 - **Python** for curriculum/dataset generation, research orchestration, evaluation support, and analysis
 
-Maidionis starts from that evidence, but the final C++ / Python responsibility split is part of the design work. Do not treat the current split as a frozen public API.
+Native C++ owns numerical model/training/archive loading. Python owns bounded education, freeze, preregistration, packaging and evaluation support. Specializations explicitly supply native and Python composition; Core supplies no Decision defaults. The initial interfaces remain experimental rather than a frozen public API.
 
 ## Design principles
 
@@ -135,16 +135,21 @@ Maidionis starts from that evidence, but the final C++ / Python responsibility s
 
 ## Getting started
 
-There is no supported build or run command yet because implementation migration has not started in this repository.
+The tested reference profile is **Linux x86_64, CPU FP32, Python 3.12, LibTorch 2.5.1+cpu, serialized training**. POSIX durability and the isolated-process load host are Linux-specific. Install C++20 tooling and OpenSSL development headers first.
 
-Start with [Issue #1: Design Maidionis Core and migrate Arbitrium as the first specialization](https://github.com/flamoris-jp/Maidionis/issues/1).
+```bash
+python -m venv .venv
+source .venv/bin/activate
+python -m pip install -r tools/dependencies.txt
+python -m pip install --no-deps --no-build-isolation .
+python tools/verify.py
+```
 
-The [Core design proposal](docs/README.md) defines specialization, data, education,
-checkpoint/artifact, evaluation and Runtime boundaries, with an Arbitrium extraction
-map and focused implementation acceptance plan. These are reviewable design
-contracts; implementation migration and Runtime integration remain future work.
+`tools/verify.py` downloads nothing: it configures/builds C++, runs native tests and Python tests, and exercises Tiny Beat from frozen data through actual training, fresh-process epoch resume, selected-best export, candidate validation/admitted archive load, inference, complete evaluation and immutable finalization. Tiny Beat lives under `tests/`; it is a synthetic mechanics fixture, not a Drum model or evidence of generalization.
 
-Repository-specific build, test, and experiment commands will be documented only after they exist and are verified against the current implementation.
+For an explicitly reduced build without LibTorch, install only the non-Torch dependencies in `tools/dependencies.txt`, then run `python tools/verify.py --no-numerical --build-dir build-contracts`. This does **not** run A21 and must not be reported as full Core acceptance.
+
+The [reviewed design](docs/README.md) defines the broader architecture and migration boundary. Arbitrium A1–A3, AI Runtime R1, production/GPU qualification and specialized model quality remain separate work. No teacher, service or API credential is required for offline acceptance.
 
 ## FLAMORIS
 

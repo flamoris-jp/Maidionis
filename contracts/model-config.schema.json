@@ -1,0 +1,84 @@
+{
+  "$id": "maidionis.model-config.v1",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "controls": {
+      "items": {
+        "maximum": 8191,
+        "minimum": 1,
+        "type": "integer"
+      },
+      "maxItems": 16,
+      "minItems": 0,
+      "type": "array",
+      "uniqueItems": true
+    },
+    "dropout_milli": {
+      "maximum": 999,
+      "minimum": 0,
+      "type": "integer"
+    },
+    "ffn_width": {
+      "maximum": 1024,
+      "minimum": 1,
+      "type": "integer"
+    },
+    "heads": {
+      "maximum": 4,
+      "minimum": 1,
+      "type": "integer"
+    },
+    "hidden_width": {
+      "maximum": 1024,
+      "minimum": 1,
+      "type": "integer"
+    },
+    "input_width": {
+      "maximum": 256,
+      "minimum": 1,
+      "type": "integer"
+    },
+    "kind": {
+      "enum": [
+        "dense",
+        "pooled",
+        "encoder"
+      ]
+    },
+    "layers": {
+      "maximum": 4,
+      "minimum": 1,
+      "type": "integer"
+    },
+    "max_length": {
+      "maximum": 256,
+      "minimum": 1,
+      "type": "integer"
+    },
+    "output_width": {
+      "maximum": 256,
+      "minimum": 1,
+      "type": "integer"
+    },
+    "vocabulary": {
+      "maximum": 8192,
+      "minimum": 0,
+      "type": "integer"
+    }
+  },
+  "required": [
+    "kind",
+    "input_width",
+    "hidden_width",
+    "output_width",
+    "dropout_milli",
+    "vocabulary",
+    "layers",
+    "heads",
+    "ffn_width",
+    "max_length",
+    "controls"
+  ],
+  "type": "object"
+}
