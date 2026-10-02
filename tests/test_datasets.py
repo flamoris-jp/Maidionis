@@ -8,18 +8,35 @@ from maidionis_education.storage import inventory
 from maidionis_education.contracts import loads
 
 class Datasets(unittest.TestCase):
+    def test_explicit_partition_hooks_are_bound_and_fail_closed(self):
+        from dataclasses import replace
+        from maidionis_education.datasets import assigned_split
+        r=registry();h=hooks();rows,_=fixture()
+        with self.assertRaises(ValueError):replace(h,assign_split=lambda *args:'train').check()
+        with self.assertRaises(ValueError):replace(h,split_algorithm='test.legacy.v1').check()
+        bad=replace(h,split_algorithm='test.legacy.v1',assign_split=lambda *args:'unknown')
+        with self.assertRaises(ValueError):assigned_split(rows[0],rows[0]['family_fingerprint'],bad,42)
+        explicit=replace(h,split_algorithm='test.legacy.v1',assign_split=lambda *args:'train')
+        explicit.check()
+        self.assertEqual(assigned_split(rows[0],rows[0]['family_fingerprint'],explicit,42),'train')
+        # Serialized split-profile text alone cannot install executable policy.
+        with tempfile.TemporaryDirectory() as td:
+            root=Path(td)/'data';frozen(root)
+            with self.assertRaises(ValueError):validate_dataset(root,digest((root/'manifest.json').read_bytes()),r,explicit)
+
     def test_import_rejects_rehashed_missing_or_substituted_components_and_paths(self):
         import shutil
         with tempfile.TemporaryDirectory() as td:
             source=Path(td)/'source';frozen(source)
             semantic=DESCRIPTOR['semantic_spec']['path']
-            for i,kind in enumerate(('semantic','input.schema.json','architecture.config.json','descriptor-path','provenance-path','grouping-version')):
+            for i,kind in enumerate(('semantic','input.schema.json','architecture.config.json','descriptor-path','provenance-path','grouping-version','split-profile-id')):
                 root=Path(td)/str(i);shutil.copytree(source,root)
                 m=loads((root/'manifest.json').read_bytes(),4*2**20)
                 if kind=='semantic':(root/semantic).unlink()
                 elif kind in ('input.schema.json','architecture.config.json'):(root/kind).write_bytes(b'{}\n')
                 elif kind=='descriptor-path':m['descriptor']['path']='missing.json'
                 elif kind=='provenance-path':m['provenance_index']['path']='missing.json'
+                elif kind=='split-profile-id':m['split_profile']['id']='other'
                 else:m['split_profile']['grouping_version']='other'
                 files={p.relative_to(root).as_posix():p.read_bytes() for p in root.rglob('*') if p.is_file() and p.name!='manifest.json'}
                 m['files']=inventory(files);raw=canonical(m);(root/'manifest.json').write_bytes(raw)

@@ -55,7 +55,12 @@ class DatasetHooks:
     root_projection: object
     equivalent_key: object
     verify: object
+    split_algorithm: str = "maidionis-split-v1"
+    assign_split: object = None
     def check(self):
+        if self.split_algorithm == "maidionis-split-v1":
+            if self.assign_split is not None: raise ValueError("neutral partition cannot be overridden")
+        elif not callable(self.assign_split) or not self.split_algorithm: raise ValueError("explicit partition binding required")
         config = {'type':'object', 'required':['id','version','config_digest'], 'additionalProperties':False,
                   'properties':{'id':{'type':'string'}, 'version':{'type':'string'}, 'config_digest':{'type':'string','pattern':'^[a-f0-9]{64}$'}}}
         for ref in (self.identity, self.grouping, self.dedup, self.verification): validate(ref, config)
@@ -82,11 +87,18 @@ def family_for(sample, registry, hooks):
                       task_version=d['task_version'], grouping_profile=hooks.grouping, root_digests=[x['digest'] for x in entries]))
     return digest(canonical(anchor)), anchor, entries
 
+def assigned_split(sample, fingerprint, hooks, seed):
+    if hooks.split_algorithm == 'maidionis-split-v1': return split_for(fingerprint, seed)
+    if not callable(hooks.assign_split): raise ValueError('missing compiled partition hook')
+    value=hooks.assign_split(sample['input'], fingerprint, seed)
+    if value not in SPLITS: raise ValueError('partition result')
+    return value
+
 def prepare_sample(sample, registry, hooks, seed):
     """Fill family identity from trusted projection; never use display ID as a seed."""
     result = dict(sample)
     fp, _, _ = family_for(sample, registry, hooks)
-    result.update(family_fingerprint=fp, split=split_for(fp, seed))
+    result.update(family_fingerprint=fp, split=assigned_split(sample, fp, hooks, seed))
     registry.sample(result)
     return result
 
@@ -106,7 +118,7 @@ def _validate(samples, provenance, registry, hooks, seed, dataset_id, audit_ance
         if row['sample_id'] in ids: raise ValueError('duplicate audit ancestor')
         ids[row['sample_id']]=row;audit_ids.add(row['sample_id'])
         fp,_,_=family_for(row,registry,hooks)
-        if row['family_fingerprint']!=fp or row['split']!=split_for(fp,seed): raise ValueError('ancestor family/split binding')
+        if row['family_fingerprint']!=fp or row['split']!=assigned_split(row,fp,hooks,seed): raise ValueError('ancestor family/split binding')
         p=proofs.get(row['provenance_id'])
         if p is None or p['sample_id']!=row['sample_id'] or p['source_digest']!=digest(canonical(row['input'])) or p['final_target']!=row['target'] or p['supersedes']!=row['supersedes']:
             raise ValueError('ancestor provenance binding')
@@ -118,7 +130,7 @@ def _validate(samples, provenance, registry, hooks, seed, dataset_id, audit_ance
         if row['sample_id'] in ids or row['dataset_id'] != dataset_id: raise ValueError('sample identity')
         ids[row['sample_id']] = row
         fp, anchor, roots = family_for(row, registry, hooks)
-        if row['family_fingerprint'] != fp or row['split'] != split_for(fp, seed): raise ValueError('family/split mismatch')
+        if row['family_fingerprint'] != fp or row['split'] != assigned_split(row, fp, hooks, seed): raise ValueError('family/split mismatch')
         if row['family_id'] in aliases and aliases[row['family_id']] != fp: raise ValueError('family alias reuse')
         aliases[row['family_id']] = fp
         key = canonical(hooks.equivalent_key(row['input']))
@@ -198,11 +210,11 @@ def freeze(root, samples, provenance, registry, hooks, component_files, *, datas
         lines = [canonical(r) for r in sorted(samples,key=lambda r:r['sample_id']) if r['split'] == split]
         if any(len(line) > 128*1024 for line in lines): raise ValueError('record byte bound')
         files[split+'.jsonl'] = b''.join(lines)
-    split_config = dict(algorithm='maidionis-split-v1', seed=seed, grouping=hooks.grouping, hook=hooks.identity)
+    split_config = dict(algorithm=hooks.split_algorithm, seed=seed, grouping=hooks.grouping, hook=hooks.identity)
     files['split.config.json'] = canonical(split_config)
     manifest = record('dataset', dict(schema_version='maidionis.dataset.v1', dataset_id=dataset_id, parent=None,
         descriptor=dict(path='descriptor.json',sha256=digest(files['descriptor.json'])), created_at=created_at, generator=generator,
-        split_profile=dict(id='maidionis-split',version='1',seed=seed,config_digest=digest(files['split.config.json']),
+        split_profile=dict(id='maidionis-split' if hooks.split_algorithm=='maidionis-split-v1' else hooks.split_algorithm,version='1',seed=seed,config_digest=digest(files['split.config.json']),
             grouping_version=hooks.grouping['version'],family_registry_digest=digest(files['family-index.json'])),
         dedup_profile=hooks.dedup, verification_profile=hooks.verification, files=inventory(files), counts=_counts(samples),
         provenance_index=dict(path='provenance.jsonl',sha256=digest(files['provenance.jsonl'])), license_summary=license_summary,
@@ -220,8 +232,10 @@ def validate_dataset(root, trusted_digest, registry, hooks):
         raise ValueError('dataset metadata path/profile binding')
     if files.get('descriptor.json') != canonical(registry.descriptor) or digest(files['descriptor.json']) != m['descriptor']['sha256']:
         raise ValueError('descriptor binding')
+    expected_profile='maidionis-split' if hooks.split_algorithm=='maidionis-split-v1' else hooks.split_algorithm
+    if m['split_profile']['id']!=expected_profile or m['split_profile']['version']!='1': raise ValueError('partition profile identity')
     config = loads(files['split.config.json'])
-    if config != dict(algorithm='maidionis-split-v1',seed=m['split_profile']['seed'],grouping=hooks.grouping,hook=hooks.identity) or digest(files['split.config.json']) != m['split_profile']['config_digest']:
+    if config != dict(algorithm=hooks.split_algorithm,seed=m['split_profile']['seed'],grouping=hooks.grouping,hook=hooks.identity) or digest(files['split.config.json']) != m['split_profile']['config_digest']:
         raise ValueError('split profile binding')
     if m['dedup_profile'] != hooks.dedup or m['verification_profile'] != hooks.verification: raise ValueError('dataset hook identity')
     def jsonl(raw):

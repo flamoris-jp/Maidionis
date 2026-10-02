@@ -39,16 +39,20 @@ DatasetHandle training_data(const std::filesystem::path& root,const std::string&
   require(entries.contains("descriptor.json")&&entries["descriptor.json"]["sha256"]==manifest["descriptor"]["sha256"],"descriptor inventory binding");
   auto split_config=metadata("split.config.json"),index=metadata("family-index.json");validate_record("family-index",index);
   require(entries.at("family-index.json")["sha256"]==manifest["split_profile"]["family_registry_digest"]&&entries.at("split.config.json")["sha256"]==manifest["split_profile"]["config_digest"],"family/split config binding");
-  require(split_config["algorithm"]=="maidionis-split-v1"&&split_config["seed"]==manifest["split_profile"]["seed"]&&split_config["grouping"]["version"]==manifest["split_profile"]["grouping_version"],"supported split algorithm");
-  auto assigned=[&](const std::string& fp){auto hash=sha256("maidionis-split-v1\n"+std::to_string(manifest["split_profile"]["seed"].get<int64_t>())+"\n"+fp);auto bucket=std::stoull(hash.substr(0,16),nullptr,16)%10000;
-    return bucket<6000?"train":bucket<7500?"dev":bucket<8500?"calibration_fit":bucket<9000?"calibration_select":"test";};
+  require(manifest["split_profile"]["id"]==(composition.split_algorithm=="maidionis-split-v1"?"maidionis-split":composition.split_algorithm)&&manifest["split_profile"]["version"]=="1","partition profile identity");
+  require(split_config["algorithm"]==composition.split_algorithm&&split_config["seed"]==manifest["split_profile"]["seed"]&&split_config["grouping"]["version"]==manifest["split_profile"]["grouping_version"],"supported split algorithm");
+  require(composition.split_algorithm=="maidionis-split-v1"?!composition.assign_family:bool(composition.assign_family),"explicit partition binding required");
+  auto assigned=[&](const std::string& fp,const Json& family){
+    if(composition.assign_family){auto s=composition.assign_family(family,manifest,split_config);require(s=="train"||s=="dev"||s=="calibration_fit"||s=="calibration_select"||s=="test","partition result");return s;}
+    auto hash=sha256("maidionis-split-v1\n"+std::to_string(manifest["split_profile"]["seed"].get<int64_t>())+"\n"+fp);auto bucket=std::stoull(hash.substr(0,16),nullptr,16)%10000;
+    return std::string(bucket<6000?"train":bucket<7500?"dev":bucket<8500?"calibration_fit":bucket<9000?"calibration_select":"test");};
   std::map<std::string,Json> families;std::set<std::string> aliases,members,roots;std::map<std::string,size_t> family_counts,record_counts;
   for(const auto& f:index){auto fp=f["fingerprint"].get<std::string>();require(families.emplace(fp,f).second&&sha256(canonical(f["anchor"]))==fp,"family anchor fingerprint");
     require(f["anchor"]["task_id"]==r.descriptor()["task_id"]&&f["anchor"]["task_version"]==r.descriptor()["task_version"]&&f["anchor"]["grouping_profile"]==split_config["grouping"],"family anchor profile");
     std::vector<std::string> root_digests;for(const auto& root:f["roots"]){auto h=root["digest"].get<std::string>();require(h==sha256(canonical(root["content"]))&&roots.insert(h).second,"forged/shared family root");root_digests.push_back(h);}
     require(std::is_sorted(root_digests.begin(),root_digests.end())&&Json(root_digests)==f["anchor"]["root_digests"],"root ordering/binding");
     for(const auto& a:f["aliases"])require(aliases.insert(a.get<std::string>()).second,"family alias collision");for(const auto& id:f["members"])require(members.insert(id.get<std::string>()).second,"family member collision");
-    auto s=assigned(fp);++family_counts[s];record_counts[s]+=f["members"].size();}
+    auto s=assigned(fp,f);++family_counts[s];record_counts[s]+=f["members"].size();}
   for(const auto& s:{"train","dev","calibration_fit","calibration_select","test"})require(manifest["counts"][s]["families"]==family_counts[s]&&manifest["counts"][s]["records"]==record_counts[s],"family split counts");
   DatasetHandle data;data.manifest_digest_=trusted_digest;
   std::set<std::string> all_ids;
@@ -58,7 +62,7 @@ DatasetHandle training_data(const std::filesystem::path& root,const std::string&
     if(!bytes.empty())require(bytes.back()=='\n',"JSONL missing LF");std::istringstream lines(bytes);std::string line;auto& rows=std::string(split)=="train"?data.train_:data.dev_;std::set<std::string> ids;
     while(std::getline(lines,line)){require(!line.empty(),"blank JSONL");auto row=parse_json(line,128*1024);r.sample(row);auto id=row["sample_id"].get<std::string>(),fp=row["family_fingerprint"].get<std::string>();
       require(row["split"]==split&&row["dataset_id"]==manifest["dataset_id"]&&ids.insert(id).second&&all_ids.insert(id).second,"split record identity");
-      require(families.contains(fp)&&assigned(fp)==std::string(split),"native family split assignment");const auto& f=families.at(fp);
+      require(families.contains(fp)&&assigned(fp,families.at(fp))==std::string(split),"native family split assignment");const auto& f=families.at(fp);
       require(std::find(f["aliases"].begin(),f["aliases"].end(),row["family_id"])!=f["aliases"].end()&&std::find(f["members"].begin(),f["members"].end(),row["sample_id"])!=f["members"].end(),"family alias/member binding");
       require(row["verification_profile"]==manifest["verification_profile"],"verification profile binding");composition.verify_dataset_row(row,f,manifest,split_config);
       rows.push_back(row);require(rows.size()<=1000000,"record limit");}

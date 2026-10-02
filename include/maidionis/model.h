@@ -45,6 +45,10 @@ struct NumericalComposition {
   std::function<Json(const torch::Tensor&)> decode;
   // The specialization revalidates semantic roots/eligibility without a teacher.
   std::function<void(const Json&,const Json&,const Json&,const Json&)> verify_dataset_row;
+  // Explicit compiled adapters may preserve an inventoried legacy partition.
+  // No persisted input can install the callback or replace the neutral default.
+  std::string split_algorithm="maidionis-split-v1";
+  std::function<std::string(const Json&,const Json&,const Json&)> assign_family;
   void validate() const;
 };
 std::string numerical_environment();
