@@ -154,3 +154,19 @@ profile, record count, split, task/codec and tensor contract. Fixture-only mode
 never weakens integrity. The source freezer implements useful journal/family/
 hash mechanics, but not the complete production audit/support schema: migration
 must fill those gaps rather than certify its current output as release data.
+
+## Explicit compiled research partition adapters
+
+The default remains `maidionis-split-v1`: ancestry fingerprints determine the
+partition, and display aliases cannot influence it. An adapter for immutable
+legacy research may supply `DatasetHooks.split_algorithm` / `assign_split` in
+Python and `NumericalComposition.split_algorithm` / `assign_family` in native
+code. A nondefault algorithm requires its callable; the default cannot be
+replaced by a callable. Imported records cannot install either callback.
+
+The adapter binds its exact algorithm, seed, grouping, hook build identity and
+source inventory, validates original family membership, and permits research
+fixtures only. Frozen derivatives retain the normal inventory, anchors,
+provenance and complete accounting, with new IDs/digests; they do not become
+historical datasets or sealed release evidence. Arbitrium owns its legacy
+semantics. Core owns only this explicit extension point.

@@ -8,6 +8,22 @@ from maidionis_education.storage import inventory
 from maidionis_education.contracts import loads
 
 class Datasets(unittest.TestCase):
+    def test_explicit_partition_hooks_are_bound_and_fail_closed(self):
+        from dataclasses import replace
+        from maidionis_education.datasets import assigned_split
+        r=registry();h=hooks();rows,_=fixture()
+        with self.assertRaises(ValueError):replace(h,assign_split=lambda *args:'train').check()
+        with self.assertRaises(ValueError):replace(h,split_algorithm='test.legacy.v1').check()
+        bad=replace(h,split_algorithm='test.legacy.v1',assign_split=lambda *args:'unknown')
+        with self.assertRaises(ValueError):assigned_split(rows[0],rows[0]['family_fingerprint'],bad,42)
+        explicit=replace(h,split_algorithm='test.legacy.v1',assign_split=lambda *args:'train')
+        explicit.check()
+        self.assertEqual(assigned_split(rows[0],rows[0]['family_fingerprint'],explicit,42),'train')
+        # Serialized split-profile text alone cannot install executable policy.
+        with tempfile.TemporaryDirectory() as td:
+            root=Path(td)/'data';frozen(root)
+            with self.assertRaises(ValueError):validate_dataset(root,digest((root/'manifest.json').read_bytes()),r,explicit)
+
     def test_import_rejects_rehashed_missing_or_substituted_components_and_paths(self):
         import shutil
         with tempfile.TemporaryDirectory() as td:
