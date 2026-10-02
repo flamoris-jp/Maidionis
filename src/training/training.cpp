@@ -39,6 +39,7 @@ DatasetHandle training_data(const std::filesystem::path& root,const std::string&
   require(entries.contains("descriptor.json")&&entries["descriptor.json"]["sha256"]==manifest["descriptor"]["sha256"],"descriptor inventory binding");
   auto split_config=metadata("split.config.json"),index=metadata("family-index.json");validate_record("family-index",index);
   require(entries.at("family-index.json")["sha256"]==manifest["split_profile"]["family_registry_digest"]&&entries.at("split.config.json")["sha256"]==manifest["split_profile"]["config_digest"],"family/split config binding");
+  require(manifest["split_profile"]["id"]==(composition.split_algorithm=="maidionis-split-v1"?"maidionis-split":composition.split_algorithm)&&manifest["split_profile"]["version"]=="1","partition profile identity");
   require(split_config["algorithm"]==composition.split_algorithm&&split_config["seed"]==manifest["split_profile"]["seed"]&&split_config["grouping"]["version"]==manifest["split_profile"]["grouping_version"],"supported split algorithm");
   require(composition.split_algorithm=="maidionis-split-v1"?!composition.assign_family:bool(composition.assign_family),"explicit partition binding required");
   auto assigned=[&](const std::string& fp,const Json& family){

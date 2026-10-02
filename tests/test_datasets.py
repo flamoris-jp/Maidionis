@@ -29,13 +29,14 @@ class Datasets(unittest.TestCase):
         with tempfile.TemporaryDirectory() as td:
             source=Path(td)/'source';frozen(source)
             semantic=DESCRIPTOR['semantic_spec']['path']
-            for i,kind in enumerate(('semantic','input.schema.json','architecture.config.json','descriptor-path','provenance-path','grouping-version')):
+            for i,kind in enumerate(('semantic','input.schema.json','architecture.config.json','descriptor-path','provenance-path','grouping-version','split-profile-id')):
                 root=Path(td)/str(i);shutil.copytree(source,root)
                 m=loads((root/'manifest.json').read_bytes(),4*2**20)
                 if kind=='semantic':(root/semantic).unlink()
                 elif kind in ('input.schema.json','architecture.config.json'):(root/kind).write_bytes(b'{}\n')
                 elif kind=='descriptor-path':m['descriptor']['path']='missing.json'
                 elif kind=='provenance-path':m['provenance_index']['path']='missing.json'
+                elif kind=='split-profile-id':m['split_profile']['id']='other'
                 else:m['split_profile']['grouping_version']='other'
                 files={p.relative_to(root).as_posix():p.read_bytes() for p in root.rglob('*') if p.is_file() and p.name!='manifest.json'}
                 m['files']=inventory(files);raw=canonical(m);(root/'manifest.json').write_bytes(raw)

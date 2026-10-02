@@ -232,6 +232,8 @@ def validate_dataset(root, trusted_digest, registry, hooks):
         raise ValueError('dataset metadata path/profile binding')
     if files.get('descriptor.json') != canonical(registry.descriptor) or digest(files['descriptor.json']) != m['descriptor']['sha256']:
         raise ValueError('descriptor binding')
+    expected_profile='maidionis-split' if hooks.split_algorithm=='maidionis-split-v1' else hooks.split_algorithm
+    if m['split_profile']['id']!=expected_profile or m['split_profile']['version']!='1': raise ValueError('partition profile identity')
     config = loads(files['split.config.json'])
     if config != dict(algorithm=hooks.split_algorithm,seed=m['split_profile']['seed'],grouping=hooks.grouping,hook=hooks.identity) or digest(files['split.config.json']) != m['split_profile']['config_digest']:
         raise ValueError('split profile binding')
